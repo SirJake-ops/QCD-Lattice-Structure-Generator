@@ -1,0 +1,38 @@
+schema_version = 1
+
+[model]
+gauge_group = "u1"
+action = "wilson"
+beta = 1.0
+
+[lattice]
+extents = [4, 4, 4, 4]
+boundary = "periodic"
+spacing = 1.0
+
+[sampling]
+seed = 1
+warmup_sweeps = 10
+measurement_sweeps = 20
+sweeps_between_measurements = 2
+chains = 1
+
+[update]
+algorithm = "metropolis"
+proposal_scale = 0.25
+
+[observables]
+plaquette = true
+polyakov_loop = false
+wilson_loops = [[1, 1]]
+
+[execution]
+backend = "cpu"
+precision = "double"
+threads = 1
+
+[output]
+directory = "results/small-test"
+format = "csv"
+save_configurations = false
+configuration_interval = 10

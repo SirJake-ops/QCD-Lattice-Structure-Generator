@@ -1,0 +1,75 @@
+# CMake build directories
+/build/
+/build-*/
+/cmake-build-*/
+/out/
+
+# CMake and Ninja artifacts from accidental in-source builds
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+DartConfiguration.tcl
+cmake_install.cmake
+install_manifest.txt
+Makefile
+build.ninja
+.ninja_deps
+.ninja_log
+compile_commands.json
+_deps/
+Testing/
+
+# C++ and CUDA build products
+*.a
+*.d
+*.dll
+*.dylib
+*.exe
+*.exp
+*.fatbin
+*.ilk
+*.lib
+*.o
+*.obj
+*.ptx
+*.cubin
+*.so
+*.so.*
+
+# Test coverage and profiling output
+/coverage/
+*.gcda
+*.gcno
+*.gcov
+*.lcov
+*.profdata
+*.profraw
+*.ncu-rep
+*.nsys-rep
+
+# Generated simulation output
+/results/
+
+# IDE and editor-local files
+/.idea/
+/.vscode/
+/.cache/
+CMakeUserPresets.json
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*.swo
+*~
+
+# Local environment and secret files
+.env
+.env.*
+!.env.example
+
+# Operating-system metadata and crash dumps
+.DS_Store
+Thumbs.db
+core
+core.*

@@ -1,0 +1,39 @@
+# Forward-looking configuration for the pure SU(3) milestone.
+schema_version = 1
+
+[model]
+gauge_group = "su3"
+action = "wilson"
+beta = 5.7
+
+[lattice]
+extents = [8, 8, 8, 16]
+boundary = "periodic"
+spacing = 1.0
+
+[sampling]
+seed = 314159
+warmup_sweeps = 2000
+measurement_sweeps = 10000
+sweeps_between_measurements = 20
+chains = 4
+
+[update]
+algorithm = "heatbath_overrelaxation"
+overrelaxation_sweeps = 4
+
+[observables]
+plaquette = true
+polyakov_loop = true
+wilson_loops = [[1, 1], [1, 2], [2, 2], [2, 3], [3, 3]]
+
+[execution]
+backend = "cuda"
+precision = "double"
+threads = 1
+
+[output]
+directory = "results/example-su3"
+format = "hdf5"
+save_configurations = true
+configuration_interval = 100
