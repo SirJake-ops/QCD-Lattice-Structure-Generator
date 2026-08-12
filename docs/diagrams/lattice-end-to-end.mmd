@@ -1,0 +1,48 @@
+flowchart TD
+    start([Start run]) --> config["Load and validate<br/>run configuration"]
+    config --> valid{"Configuration<br/>valid?"}
+    valid -->|No| fail["Report errors and stop"]
+    valid -->|Yes| shape["Construct lattice shape,<br/>strides, and neighbors"]
+    shape --> shape_ok{"Geometry checks<br/>pass?"}
+    shape_ok -->|No| fail
+    shape_ok -->|Yes| field["Allocate one link U_mu(x)<br/>per site and direction"]
+    field --> init{"Initial state"}
+    init -->|Cold| cold["Set links to identity"]
+    init -->|Hot| hot["Draw random group elements"]
+    cold --> rng["Seed deterministic<br/>random streams"]
+    hot --> rng
+    rng --> warmup["Thermalization sweeps"]
+    warmup --> link["Visit next link U_mu(x)"]
+    link --> proposal["Propose group-valued<br/>replacement U'_mu(x)"]
+    proposal --> delta["Compute local action<br/>change Delta S"]
+    delta --> accept{"Accept proposal?"}
+    accept -->|Yes| commit["Store U'_mu(x)"]
+    accept -->|No| retain["Keep U_mu(x)"]
+    commit --> links_done{"Sweep complete?"}
+    retain --> links_done
+    links_done -->|No| link
+    links_done -->|Yes| thermalized{"Warm-up<br/>complete?"}
+    thermalized -->|No| warmup
+    thermalized -->|Yes| spacing["Run decorrelation sweeps"]
+    spacing --> measure["Measure plaquettes,<br/>Wilson loops, and diagnostics"]
+    measure --> record["Record observables,<br/>chain ID, and sweep"]
+    record --> enough{"Enough<br/>measurements?"}
+    enough -->|No| spacing
+    enough -->|Yes| stats["Block correlated samples<br/>and estimate uncertainty"]
+    stats --> potential["Extract effective<br/>static potential"]
+    potential --> checks{"Validation<br/>checks pass?"}
+    checks -->|No| flag["Flag result and revise<br/>run or implementation"]
+    checks -->|Yes| output["Write results, resolved<br/>configuration, and provenance"]
+    flag --> stop([Stop])
+    output --> done([Validated lattice result])
+
+    classDef input fill:#e8f1ff,stroke:#2563eb,color:#172554
+    classDef compute fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef decision fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    classDef result fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef error fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+    class config input
+    class shape,field,cold,hot,rng,warmup,link,proposal,delta,commit,retain,spacing,measure,record,stats,potential compute
+    class valid,shape_ok,init,accept,links_done,thermalized,enough,checks decision
+    class output,done result
+    class fail,flag,stop error

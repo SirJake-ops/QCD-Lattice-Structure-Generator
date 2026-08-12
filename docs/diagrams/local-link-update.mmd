@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Sweep as Sweep controller
+    participant Field as Gauge field
+    participant RNG as Random stream
+    participant Action as Wilson action
+
+    Sweep->>Field: Read U_mu(x) and neighboring links
+    Field-->>Sweep: Current link and staples
+    Sweep->>RNG: Draw group-valued perturbation R
+    RNG-->>Sweep: R in the selected gauge group
+    Sweep->>Sweep: Form proposal U'_mu(x) = R U_mu(x)
+    Sweep->>Action: Evaluate affected plaquettes
+    Action-->>Sweep: Delta S = S_local(U') - S_local(U)
+    Sweep->>RNG: Draw u uniformly from [0, 1)
+    RNG-->>Sweep: u
+    alt log(u) is less than -Delta S
+        Sweep->>Field: Commit U_mu(x) = U'_mu(x)
+    else proposal rejected
+        Sweep->>Field: Keep U_mu(x)
+    end
+    Sweep->>Sweep: Update acceptance counters

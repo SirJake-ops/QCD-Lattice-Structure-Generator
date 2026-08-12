@@ -1,0 +1,16 @@
+flowchart TD
+    index["Coordinate/index<br/>round trips"] --> boundary["Periodic neighbors<br/>and path closure"]
+    boundary --> group["Gauge-group<br/>identities"]
+    group --> action["Local Delta S matches<br/>global action difference"]
+    action --> gauge["Closed loops are gauge<br/>transformation invariant"]
+    gauge --> starts["Hot and cold starts agree<br/>after thermalization"]
+    starts --> chains["Independent chains agree<br/>within correlated errors"]
+    chains --> benchmark["Tiny-lattice or published<br/>reference benchmark"]
+    benchmark --> systematics["Volume and lattice-<br/>spacing studies"]
+
+    classDef structural fill:#e8f1ff,stroke:#2563eb,color:#172554
+    classDef numerical fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef physical fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    class index,boundary,group structural
+    class action,gauge,starts,chains numerical
+    class benchmark,systematics physical

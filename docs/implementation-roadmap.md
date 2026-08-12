@@ -9,6 +9,7 @@ documented, language-neutral format.
 Suggested initial toolchain:
 
 - C++23 for host code, CUDA C++20, and CMake;
+- toml++ for typed run-configuration parsing;
 - GoogleTest integrated with CTest;
 - GCC/gcov coverage instrumentation, with optional gcovr reports;
 - sanitizers in a debug build;
@@ -18,15 +19,18 @@ Suggested initial toolchain:
 
 Avoid adding a large dependency until a concrete need is demonstrated.
 
-## Proposed source layout
+## Source layout
 
 ```text
 qcd-prediction/
+  .gitignore
   CMakeLists.txt
+  README.md
   cmake/
     ResetCoverage.cmake
   docs/
   include/qcd/
+    config.h           # typed run-configuration model
     lattice.h          # dimensions, indexing, neighbors
     boundary.h
     rng.h
@@ -42,6 +46,8 @@ qcd-prediction/
       kernels.cuh
       device_rng.cuh
   src/
+    config/
+      config.cpp       # TOML parsing and validation
     lattice/
       lattice.cpp
     cuda/
@@ -54,8 +60,11 @@ qcd-prediction/
     inspect.cpp        # summarize an output file
   tests/
     sanity_test.cpp
+    config_test.cpp
   configs/
-    config.h
+    default.toml
+    small-test.toml
+    example-su3.toml
   analysis/
 ```
 
@@ -69,16 +78,28 @@ Completed infrastructure:
 - [x] CMake project with separate host (`lattice`) and CUDA (`qcd_cuda`) libraries.
 - [x] Backend-neutral `.h` interfaces and CUDA-specific `.cuh`/`.cu` scaffolding.
 - [x] Application source layout under `apps/` and a buildable executable skeleton.
-- [x] GoogleTest/CTest integration with a discovered sanity test.
+- [x] toml++ integration through CMake `FetchContent`.
+- [x] Typed TOML configuration model with required-field and value validation.
+- [x] Default, small-test, and forward-looking SU(3) configuration examples.
+- [x] Build-directory copies of the example configurations and a default runtime path.
+- [x] GoogleTest/CTest integration with sanity and configuration tests.
 - [x] Optional GCC/gcov instrumentation and a repeatable `coverage` target.
 - [x] Optional gcovr HTML, XML, and text report configuration.
+- [x] Root build/test documentation and project-focused Git ignore rules.
 
 Still required to complete M0:
 
-- [ ] Parse a configuration file and print fully resolved settings.
-- [ ] Verify and document both Debug and Release workflows from a fresh checkout.
+- [ ] Print all fully resolved settings; the executable currently prints only the
+      selected file and gauge group.
+- [ ] Verify and document a Release workflow from a clean build directory.
+- [ ] Verify the documented Debug and Release workflows from a fresh checkout.
 - [ ] Add project warning and sanitizer options.
 - [ ] Add continuous integration after the local build and test workflow stabilizes.
+
+Current implementation boundary: configuration parsing and development
+infrastructure are functional. Lattice indexing, group operations, actions,
+updates, observables, statistics, simulation output, and CUDA kernels remain
+empty scaffolding.
 
 ## Data model
 
@@ -119,10 +140,13 @@ paper-specific Zenodo deposits.
 
 ### M0: executable skeleton
 
-- [x] CMake configures a Debug build with C++ and CUDA targets.
+- [x] CMake configures and builds a Debug build with C++ and CUDA targets from a
+      clean build directory.
 - [ ] CMake Release configuration is verified and documented.
-- [ ] One executable reads a configuration and prints the resolved settings.
+- [x] One executable reads and validates a TOML configuration into typed settings.
+- [ ] The executable prints all resolved settings.
 - [x] Tests run with a single CTest or `coverage` target command.
+- [x] Build, test, run, coverage, and current-scope instructions are documented.
 - [ ] Continuous checks use warnings, tests, and sanitizers where supported.
 
 Exit condition: a fresh checkout builds and tests from documented commands.

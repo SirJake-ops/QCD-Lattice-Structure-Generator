@@ -1,0 +1,22 @@
+flowchart TD
+    field["Sampled gauge<br/>field U"] --> loops["Trace ordered products<br/>around r by t rectangles"]
+    loops --> samples["Wilson-loop samples<br/>W_k(r,t)"]
+    samples --> block["Block samples beyond<br/>the autocorrelation scale"]
+    block --> resample["Jackknife or bootstrap<br/>the correlated blocks"]
+    resample --> ratio["For every resample, form<br/>W(r,t) / W(r,t+1)"]
+    ratio --> effective["Compute effective potential<br/>a V_eff(r,t)"]
+    effective --> plateau{"Stable plateau<br/>across t?"}
+    plateau -->|No| revise["Increase statistics, improve<br/>operators, or revise fit window"]
+    plateau -->|Yes| fit["Perform correlated fit"]
+    fit --> result["Report V(r) with statistical<br/>and systematic uncertainty"]
+
+    classDef input fill:#e8f1ff,stroke:#2563eb,color:#172554
+    classDef compute fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef decision fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    classDef resultStyle fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef error fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+    class field input
+    class loops,samples,block,resample,ratio,effective,fit compute
+    class plateau decision
+    class result resultStyle
+    class revise error

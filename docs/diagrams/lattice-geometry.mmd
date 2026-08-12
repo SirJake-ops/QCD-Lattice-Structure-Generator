@@ -1,0 +1,18 @@
+flowchart TD
+    extents["Extents L_mu"] --> validate["Require L_mu > 0<br/>and check overflow"]
+    validate --> strides["Compute row-major<br/>strides s_mu"]
+    strides --> volume["Compute volume<br/>V = product of L_mu"]
+    volume --> site["Flatten coordinate x<br/>to site index i(x)"]
+    site --> link["Flatten (x, mu)<br/>to link index ell(x, mu)"]
+    site --> forward["Forward neighbor<br/>x + mu-hat"]
+    site --> backward["Backward neighbor<br/>x - mu-hat"]
+    link --> paths["Plaquettes, staples,<br/>and Wilson paths"]
+    forward --> paths
+    backward --> paths
+
+    classDef input fill:#e8f1ff,stroke:#2563eb,color:#172554
+    classDef compute fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef result fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    class extents input
+    class validate,strides,volume,site,link,forward,backward compute
+    class paths result

@@ -50,6 +50,9 @@ engineering difficulty.
   specifies inputs, outputs, and success criteria.
 - [Physics and numerical foundations](physics-and-numerics.md) introduces the
   lattice formulation, common observables, Monte Carlo, and validation.
+- [Lattice calculation flow](lattice-calculation-flow.md) gives a Mermaid-based
+  visual reference from lattice construction through sampling and potential
+  extraction.
 - [Common lattice-QCD challenges](common-challenges.md) maps the main physical
   and computational problems to standard mitigation strategies.
 - [Implementation roadmap](implementation-roadmap.md) proposes modules,

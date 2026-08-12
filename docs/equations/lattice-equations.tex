@@ -1,0 +1,562 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+
+\newcommand{\Uone}{\mathrm{U}(1)}
+\newcommand{\SUN}[1]{\mathrm{SU}(#1)}
+\newcommand{\ReTr}{\operatorname{Re}\operatorname{Tr}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\Vlat}{\mathcal{V}}
+\newcommand{\Nmeas}{N_{\mathrm{meas}}}
+
+\newenvironment{interpretation}
+  {\begin{quote}\small\noindent\textbf{Interpretation.}\ }
+  {\end{quote}}
+
+\title{Pure-Gauge Lattice Calculation\\
+\large Equations, Meaning, and Algorithmic Role}
+\author{QCD Prediction Project}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document explains the mathematical operations in one planned pure-gauge
+lattice calculation. It connects each expression to the data it consumes, the
+quantity it produces, and the next algorithmic step. The intended first
+applications are compact \(\Uone\), pure \(\SUN{2}\), and pure \(\SUN{3}\)
+models with periodic boundaries and the Wilson gauge action. Dynamical
+fermions are outside this calculation.
+\end{abstract}
+
+\tableofcontents
+
+\section{Calculation at a glance}
+
+One complete run has the following dependency chain:
+
+\begin{enumerate}
+  \item Convert lattice extents into site indices and periodic neighbors.
+  \item Allocate and initialize one gauge link per site and direction.
+  \item Form plaquettes and evaluate the Wilson gauge action.
+  \item Update links with a Markov-chain Monte Carlo algorithm.
+  \item Discard thermalization, then measure plaquettes and Wilson loops.
+  \item Estimate autocorrelation-aware statistical uncertainties.
+  \item Convert Wilson-loop ratios into an effective static potential.
+  \item Validate structural identities and compare independent chains.
+\end{enumerate}
+
+The output of one stage is the input of the next:
+
+\begin{center}
+\begin{tabular}{@{}p{0.18\textwidth}p{0.31\textwidth}p{0.38\textwidth}@{}}
+\toprule
+\textbf{Stage} & \textbf{Consumes} & \textbf{Produces} \\
+\midrule
+Geometry & Extents and boundaries & Indices, strides, neighbors \\
+Gauge field & Geometry and initial-state policy & Links \(U_\mu(x)\) \\
+Action & Links and coupling \(\beta\) & Plaquettes and \(S_W[U]\) \\
+Update & Current field and random numbers & Next Markov-chain state \\
+Measurement & Thermalized field samples & \(\bar P\) and \(W(r,t)\) \\
+Statistics & Correlated measurement history & Means, covariance, errors \\
+Potential & Correlated Wilson loops & \(aV_{\mathrm{eff}}(r,t)\), then \(V(r)\) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Notation}
+
+\begin{center}
+\begin{tabular}{@{}>{$}l<{$}p{0.72\textwidth}@{}}
+\toprule
+\multicolumn{1}{c}{\textbf{Symbol}} & \textbf{Meaning} \\
+\midrule
+D & Number of Euclidean lattice dimensions. \\
+x=(x_0,\ldots,x_{D-1}) & Integer coordinate of one lattice site. \\
+L_\mu & Number of sites in direction \(\mu\). \\
+\Vlat & Total number of lattice sites. A calligraphic symbol distinguishes
+volume from the potential \(V(r)\). \\
+\mu,\nu & Direction indices in \(\{0,\ldots,D-1\}\). \\
+\hat\mu & Unit displacement in direction \(\mu\). \\
+U_\mu(x) & Gauge link from \(x\) to \(x+\hat\mu\). \\
+G & Gauge group: initially \(\Uone\), then \(\SUN{2}\) or \(\SUN{3}\). \\
+N & Matrix dimension for \(\SUN{N}\); QCD uses \(N=3\). \\
+\beta & Bare inverse coupling in the Wilson action. \\
+a & Lattice spacing; \(aV\) is a dimensionless potential. \\
+r,t & Spatial and Euclidean-time extents in lattice units. \\
+\Nmeas & Number of saved measurements in a chain. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Step 1: construct the lattice}
+
+\subsection{Allowed sites and volume}
+
+For periodic extents \(L_0,\ldots,L_{D-1}\), the set of sites is
+\begin{equation}
+  \Lambda =
+  \left\{x=(x_0,\ldots,x_{D-1})\;\middle|\;
+  0\leq x_\mu<L_\mu\right\}.
+  \label{eq:lattice-sites}
+\end{equation}
+
+\begin{interpretation}
+Each component \(x_\mu\) is an integer. Equation~\eqref{eq:lattice-sites}
+defines which coordinates are legal before any fields are allocated.
+\end{interpretation}
+
+The total number of sites is
+\begin{equation}
+  \Vlat = |\Lambda| = \prod_{\mu=0}^{D-1}L_\mu.
+  \label{eq:lattice-volume}
+\end{equation}
+
+\begin{interpretation}
+The program must check that every \(L_\mu>0\) and that the product in
+Equation~\eqref{eq:lattice-volume} does not overflow the index type.
+\(\Vlat\) determines the site allocation size.
+\end{interpretation}
+
+\subsection{Flattened storage}
+
+For row-major storage, define strides and the flattened site index by
+\begin{equation}
+  s_0=1,\qquad
+  s_\mu=\prod_{\nu=0}^{\mu-1}L_\nu,\qquad
+  i(x)=\sum_{\mu=0}^{D-1}x_\mu s_\mu.
+  \label{eq:site-index}
+\end{equation}
+
+\begin{interpretation}
+\(s_\mu\) is the number of contiguous entries skipped when \(x_\mu\)
+increases by one. The result \(i(x)\) lies in
+\(0\leq i(x)<\Vlat\) and is used to address site-owned data.
+\end{interpretation}
+
+Because every site owns one outgoing link in each direction, a convenient link
+index is
+\begin{equation}
+  \ell(x,\mu)=D\,i(x)+\mu,
+  \qquad 0\leq\ell<D\Vlat.
+  \label{eq:link-index}
+\end{equation}
+
+\begin{interpretation}
+Equation~\eqref{eq:link-index} maps a site and direction to one flat gauge-field
+allocation containing \(D\Vlat\) group elements.
+\end{interpretation}
+
+\subsection{Periodic neighbors}
+
+Forward and backward neighbors change only coordinate \(\mu\):
+\begin{equation}
+\begin{aligned}
+  (x+\hat\mu)_\nu &=
+  \begin{cases}
+    (x_\mu+1)\bmod L_\mu, & \nu=\mu,\\
+    x_\nu,                & \nu\neq\mu,
+  \end{cases}
+  \\[1ex]
+  (x-\hat\mu)_\nu &=
+  \begin{cases}
+    (x_\mu+L_\mu-1)\bmod L_\mu, & \nu=\mu,\\
+    x_\nu,                      & \nu\neq\mu.
+  \end{cases}
+  \label{eq:periodic-neighbors}
+\end{aligned}
+\end{equation}
+
+\begin{interpretation}
+The added \(L_\mu\) in the backward expression keeps the dividend nonnegative
+before the modulo operation. These neighbors are reused in plaquettes, staples,
+Wilson paths, and boundary tests.
+\end{interpretation}
+
+\paragraph{Step output.}
+A validated lattice shape, a coordinate/index round trip, and forward/backward
+neighbor operations.
+
+\section{Step 2: initialize the gauge field}
+
+A directed link stores an element of the chosen gauge group:
+\begin{equation}
+  U_\mu(x)\in G,\qquad
+  G\in\{\Uone,\SUN{2},\SUN{3}\}.
+  \label{eq:gauge-link}
+\end{equation}
+
+For an \(\SUN{N}\) link, group membership requires
+\begin{equation}
+  U_\mu^\dagger(x)U_\mu(x)=I,
+  \qquad
+  \det U_\mu(x)=1.
+  \label{eq:su-constraints}
+\end{equation}
+
+\begin{interpretation}
+\(U_\mu(x)\) transports a color vector from \(x\) to \(x+\hat\mu\).
+Traversing the link backward uses \(U_\mu^\dagger(x)\). The identities in
+Equation~\eqref{eq:su-constraints} are also inexpensive numerical diagnostics.
+\end{interpretation}
+
+A cold start uses \(U_\mu(x)=I\). A hot start draws a random valid group
+element for each link. Both starts should approach the same equilibrium
+distribution after sufficient thermalization.
+
+\paragraph{Step output.}
+A gauge field containing \(D\Vlat\) valid link values and reproducibly seeded
+random-number streams.
+
+\section{Step 3: form plaquettes and the Wilson action}
+
+\subsection{Oriented plaquette}
+
+The elementary loop in the positive \(\mu\)-\(\nu\) orientation is
+\begin{equation}
+  U_{\mu\nu}(x)=
+  U_\mu(x)\,
+  U_\nu(x+\hat\mu)\,
+  U_\mu^\dagger(x+\hat\nu)\,
+  U_\nu^\dagger(x).
+  \label{eq:plaquette}
+\end{equation}
+
+\begin{interpretation}
+Read Equation~\eqref{eq:plaquette} from left to right as four path segments:
+forward in \(\mu\), forward in \(\nu\), backward in \(\mu\), and backward in
+\(\nu\). The path returns to \(x\). Its traced value is gauge invariant even
+though an individual link is not.
+\end{interpretation}
+
+\subsection{Wilson gauge action}
+
+For pure \(\SUN{N}\), use
+\begin{equation}
+  S_W[U]=
+  \beta\sum_x\sum_{\mu<\nu}
+  \left(
+    1-\frac{1}{N}\ReTr U_{\mu\nu}(x)
+  \right).
+  \label{eq:wilson-action}
+\end{equation}
+
+\begin{interpretation}
+The inner sum counts every unoriented plaquette once. A plaquette close to the
+identity has a small contribution; rough field configurations have a larger
+action. The convention in Equation~\eqref{eq:wilson-action} must be used
+consistently by the global action, local update, and observables.
+\end{interpretation}
+
+The corresponding ensemble expectation of an observable \(\mathcal O\) is
+\begin{equation}
+  \langle\mathcal O\rangle =
+  \frac{1}{Z}\int\mathcal D U\;
+  \mathcal O[U]\ee^{-S_W[U]},
+  \qquad
+  Z=\int\mathcal D U\;\ee^{-S_W[U]}.
+  \label{eq:expectation}
+\end{equation}
+
+\begin{interpretation}
+\(\mathcal D U\) means integration over every gauge link using the invariant
+group measure. \(Z\) normalizes the probability distribution. The program does
+not enumerate this integral; it estimates it with correlated samples from a
+Markov chain whose target weight is proportional to \(\ee^{-S_W[U]}\).
+\end{interpretation}
+
+\paragraph{Step output.}
+A global action definition, a local plaquette primitive, and a target
+probability distribution for the sampler.
+
+\section{Step 4: update one gauge link}
+
+\subsection{Proposal}
+
+Draw a small group-valued perturbation \(R\in G\) and propose
+\begin{equation}
+  U_\mu'(x)=R\,U_\mu(x).
+  \label{eq:proposal}
+\end{equation}
+
+\begin{interpretation}
+Because both factors belong to \(G\), the proposal remains in \(G\). The
+proposal distribution should be symmetric, or its forward/reverse probability
+ratio must be included in a more general Metropolis--Hastings test.
+\end{interpretation}
+
+\subsection{Local action difference}
+
+Only the \(2(D-1)\) plaquettes containing \(U_\mu(x)\) can change. If
+\(\mathcal P(x,\mu)\) denotes that set, compute
+\begin{align}
+  \Delta S
+  &=S_{\mathrm{local}}[U']-S_{\mathrm{local}}[U],
+  \label{eq:delta-action}\\
+  S_{\mathrm{local}}[U]
+  &=\beta\sum_{p\in\mathcal P(x,\mu)}
+  \left(1-\frac{1}{N}\ReTr U_p\right).
+  \label{eq:local-action}
+\end{align}
+
+\begin{interpretation}
+Equations~\eqref{eq:delta-action}--\eqref{eq:local-action} replace an
+\(O(D^2\Vlat)\) full-action recomputation with a fixed-size local calculation.
+As a correctness test, this \(\Delta S\) must agree with the difference of two
+slow global-action evaluations.
+\end{interpretation}
+
+\subsection{Metropolis decision}
+
+The acceptance probability is
+\begin{equation}
+  P_{\mathrm{accept}}=\min\left(1,\ee^{-\Delta S}\right).
+  \label{eq:acceptance}
+\end{equation}
+
+For \(u\sim\operatorname{Uniform}[0,1)\), accept if
+\begin{equation}
+  u<P_{\mathrm{accept}},
+  \qquad\text{equivalently}\qquad
+  \log u<-\Delta S.
+  \label{eq:log-acceptance}
+\end{equation}
+
+\begin{interpretation}
+If \(\Delta S\leq0\), the proposal is always accepted. If \(\Delta S>0\),
+it is accepted with probability \(\ee^{-\Delta S}\). The logarithmic form in
+Equation~\eqref{eq:log-acceptance} avoids numerical underflow. Visiting every
+site \(x\) and direction \(\mu\) once constitutes one sweep.
+\end{interpretation}
+
+\paragraph{Step output.}
+One new Markov-chain state plus acceptance counters used to diagnose proposal
+size and sampling behavior.
+
+\section{Step 5: thermalize and measure}
+
+\subsection{Sampling schedule}
+
+First discard \(N_{\mathrm{warmup}}\) sweeps. Then save one measurement after
+every \(N_{\mathrm{spacing}}\) sweeps until \(\Nmeas\) measurements have been
+recorded. Saving less frequently can reduce storage and correlation, but it
+does not substitute for estimating autocorrelation.
+
+\subsection{Mean plaquette}
+
+There are
+\begin{equation}
+  N_{\mathrm{plaq}}=\Vlat\frac{D(D-1)}{2}
+  \label{eq:plaquette-count}
+\end{equation}
+unoriented plaquettes on a periodic isotropic lattice. Their normalized mean is
+\begin{equation}
+  \bar P=
+  \frac{1}{N_{\mathrm{plaq}}}
+  \sum_x\sum_{\mu<\nu}
+  \frac{1}{N}\ReTr U_{\mu\nu}(x).
+  \label{eq:mean-plaquette}
+\end{equation}
+
+\begin{interpretation}
+\(\bar P\) is inexpensive and is the first physical sanity check. Its history
+helps reveal thermalization and frozen or unstable updates, but it does not by
+itself determine the static potential.
+\end{interpretation}
+
+\subsection{Wilson loops}
+
+For a rectangular closed path \(C_{r,t}\), define
+\begin{equation}
+  W(r,t)=\frac{1}{N}
+  \left\langle
+    \ReTr\,
+    \mathcal P\!\!\prod_{(x,\mu)\in C_{r,t}}U_\mu(x)
+  \right\rangle.
+  \label{eq:wilson-loop}
+\end{equation}
+
+\begin{interpretation}
+\(\mathcal P\) means path ordering. Each forward segment contributes a link
+\(U_\mu(x)\); each backward segment contributes its dagger. The trace closes
+the color indices and makes the result gauge invariant. Measure several
+spatial widths \(r\) and time extents \(t\) on every saved configuration.
+\end{interpretation}
+
+\paragraph{Step output.}
+Correlated histories \(\bar P_k\) and \(W_k(r,t)\), each stored with chain ID
+and sweep number.
+
+\section{Step 6: extract the static potential}
+
+A spectral decomposition has the schematic form
+\begin{equation}
+  W(r,t)=\sum_n |c_n(r)|^2\ee^{-aE_n(r)t}.
+  \label{eq:spectral}
+\end{equation}
+
+\begin{interpretation}
+The chosen loop operator overlaps with several energy eigenstates. Excited
+states decay faster with \(t\), but the statistical signal also becomes noisier.
+This creates the practical need for a fit window.
+\end{interpretation}
+
+At sufficiently large \(t\), the lowest state dominates:
+\begin{equation}
+  W(r,t)\simeq A(r)\ee^{-aV(r)t}.
+  \label{eq:large-time}
+\end{equation}
+
+\begin{interpretation}
+\(V(r)\) is the static-source potential and \(A(r)\) is an unknown overlap
+factor. The product \(aV(r)\) is dimensionless when \(t\) is counted in lattice
+time steps.
+\end{interpretation}
+
+The neighboring-time ratio removes \(A(r)\):
+\begin{equation}
+  aV_{\mathrm{eff}}(r,t)=
+  \log\left(\frac{W(r,t)}{W(r,t+1)}\right).
+  \label{eq:effective-potential}
+\end{equation}
+
+\begin{interpretation}
+Plot Equation~\eqref{eq:effective-potential} against \(t\) at fixed \(r\).
+A region consistent with a constant is a candidate ground-state plateau.
+Fit that region to obtain \(aV(r)\), and vary the fit window to estimate a
+systematic uncertainty.
+\end{interpretation}
+
+\paragraph{Step output.}
+An effective-potential curve for each \(r\), a documented plateau window, and a
+fitted \(aV(r)\) with uncertainty.
+
+\section{Step 7: account for correlated samples}
+
+For a measurement history \(O_1,\ldots,O_{\Nmeas}\), first compute
+\begin{equation}
+  \bar O=\frac{1}{\Nmeas}\sum_{k=1}^{\Nmeas}O_k.
+  \label{eq:sample-mean}
+\end{equation}
+
+Define the lag-\(\tau\) autocovariance and normalized autocorrelation by
+\begin{align}
+  C_O(\tau)
+  &=
+  \frac{1}{\Nmeas-\tau}
+  \sum_{k=1}^{\Nmeas-\tau}
+  (O_k-\bar O)(O_{k+\tau}-\bar O),
+  \label{eq:autocovariance}\\
+  \rho_O(\tau)&=\frac{C_O(\tau)}{C_O(0)}.
+  \label{eq:autocorrelation}
+\end{align}
+
+\begin{interpretation}
+\(\rho_O(\tau)\) measures how strongly samples separated by \(\tau\) saved
+measurements remain related. It equals one at zero lag and should decay toward
+zero. Different observables can have different autocorrelation scales.
+\end{interpretation}
+
+With a justified truncation window \(\tau_{\max}\), estimate
+\begin{equation}
+  \tau_{\mathrm{int}}=
+  \frac{1}{2}+
+  \sum_{\tau=1}^{\tau_{\max}}\rho_O(\tau).
+  \label{eq:integrated-autocorrelation}
+\end{equation}
+
+\begin{interpretation}
+The sum cannot be extended indefinitely because large-lag estimates become
+noise dominated. A windowing rule or a blocking study should justify
+\(\tau_{\max}\).
+\end{interpretation}
+
+The approximate effective sample count and variance of the mean are
+\begin{align}
+  N_{\mathrm{eff}}
+  &\simeq\frac{\Nmeas}{2\tau_{\mathrm{int}}},
+  \label{eq:effective-samples}\\
+  \operatorname{Var}(\bar O)
+  &\simeq
+  \frac{2\tau_{\mathrm{int}}}{\Nmeas}
+  \operatorname{Var}(O).
+  \label{eq:correlated-variance}
+\end{align}
+
+\begin{interpretation}
+If the samples were independent, \(\tau_{\mathrm{int}}\approx1/2\) and
+\(N_{\mathrm{eff}}\approx\Nmeas\). Positive correlation reduces the effective
+sample count and enlarges the error bar. Wilson-loop ratios and potential fits
+must be recomputed inside each block-jackknife or bootstrap resample so their
+cross-correlations are preserved.
+\end{interpretation}
+
+\paragraph{Step output.}
+Autocorrelation estimates, a stable block size, covariance-aware uncertainties,
+and an effective sample count for each observable.
+
+\section{Step 8: validation gates}
+
+The following checks should be passed in order:
+
+\begin{enumerate}
+  \item coordinate-to-index round trips and every periodic boundary;
+  \item unitarity and determinant constraints for generated links;
+  \item local \(\Delta S\) versus a recomputed global action difference;
+  \item invariance of traced closed loops under random gauge transformations;
+  \item agreement of hot and cold starts after thermalization;
+  \item agreement of independent chains within correlated uncertainties;
+  \item a tiny-lattice calculation or published benchmark with matching
+        conventions; and
+  \item volume and lattice-spacing studies before making physical claims.
+\end{enumerate}
+
+A failed gate does not necessarily make the raw run useless for debugging, but
+it does make the resulting observable scientifically unvalidated.
+
+\paragraph{Step output.}
+A validation record stating which structural, numerical, statistical, and
+physical checks passed or failed.
+
+\section{Reference algorithm}
+
+\begin{verbatim}
+validate configuration
+construct lattice indices and periodic neighbors
+initialize all links and deterministic random streams
+
+repeat N_warmup times:
+    sweep over every site x and direction mu
+
+repeat N_measurements times:
+    repeat N_spacing times:
+        sweep over every site x and direction mu
+    measure mean plaquette and Wilson loops W(r,t)
+
+block the correlated measurements
+for every jackknife or bootstrap resample:
+    recompute W(r,t)
+    compute a V_eff(r,t) = log[W(r,t) / W(r,t+1)]
+    fit the selected plateau
+
+report means, covariance-aware uncertainty, diagnostics, and provenance
+\end{verbatim}
+
+\section{How to interpret the final result}
+
+A reported value of \(aV(r)\) is not automatically a continuum QCD prediction.
+It is a result for the documented action, coupling, volume, boundary conditions,
+operator, sampling procedure, and fit window. A defensible report therefore
+includes the resolved configuration, action convention, chain histories,
+autocorrelation treatment, validation results, and known finite-volume and
+lattice-spacing limitations.
+
+\end{document}
