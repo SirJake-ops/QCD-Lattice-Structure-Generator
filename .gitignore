@@ -19,6 +19,14 @@ compile_commands.json
 _deps/
 Testing/
 
+# CMake/CTest output from accidental in-source builds
+/cmake_test_discovery_*.json
+/qcd_prediction
+/qcd_sanity_tests
+/qcd_sanity_tests_*_discovery.cmake
+/qcd_sanity_tests_*_include.cmake
+/qcd_sanity_tests_*_tests.cmake
+
 # C++ and CUDA build products
 *.a
 *.d

@@ -69,10 +69,31 @@ Not implemented yet:
 - a C++ compiler with C++23 support;
 - the CUDA toolkit and an `nvcc` toolchain supporting CUDA C++20; and
 - Git and network access during the first configuration so CMake can fetch
-  toml++ and GoogleTest.
+  Eigen, toml++ and GoogleTest.
 
 Coverage builds currently require GCC and gcov. Installing `gcovr` additionally
 enables HTML, XML, and text coverage reports.
+
+## Matrix operations
+
+CMake fetches Eigen 5.0.0 automatically. `gauge_field::Su3Matrix` is an alias
+for `Eigen::Matrix3cd`, a fixed-size 3×3 complex matrix:
+
+```cpp
+#include <qcd/gauge_field.h>
+
+using gauge_field::Su3Matrix;
+Su3Matrix u = Su3Matrix::Identity();
+Su3Matrix v = Su3Matrix::Zero();
+v(0, 1) = {0.0, 1.0};
+Su3Matrix product = u * v;
+Su3Matrix dagger = v.adjoint();
+```
+
+Use `Identity()` or `Zero()` explicitly: default construction does not initialize
+Eigen matrix entries. Element access uses `(row, column)`. These are general
+complex matrices; the alias does not enforce unitarity or determinant one.
+Assign expressions to `Su3Matrix` when you want to store an evaluated result.
 
 ## Build and test
 

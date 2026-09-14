@@ -20,6 +20,16 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(tomlplusplus)
 
+# Header-only linear algebra, shared by all consumers of the public QCD headers.
+set(EIGEN_BUILD_TESTING OFF)
+set(EIGEN_BUILD_DOC OFF)
+FetchContent_Declare(
+        eigen
+        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+        GIT_TAG 5.0.0
+        GIT_SHALLOW TRUE)
+FetchContent_MakeAvailable(eigen)
+
 if (ENABLE_COVERAGE)
     if (NOT BUILD_TESTING)
         message(FATAL_ERROR "ENABLE_COVERAGE requires BUILD_TESTING=ON")
@@ -53,7 +63,7 @@ add_library(lattice
 )
 
 target_include_directories(lattice PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(lattice PRIVATE tomlplusplus::tomlplusplus)
+target_link_libraries(lattice PUBLIC Eigen3::Eigen PRIVATE tomlplusplus::tomlplusplus)
 
 if (ENABLE_COVERAGE)
     target_link_libraries(lattice PUBLIC qcd_coverage_options)
@@ -110,7 +120,8 @@ if (BUILD_TESTING)
 
     add_executable(qcd_sanity_tests
             tests/sanity_test.cpp
-            tests/config_test.cpp)
+            tests/config_test.cpp
+            tests/gauge_field_test.cpp)
     target_link_libraries(qcd_sanity_tests PRIVATE
             lattice
             tomlplusplus::tomlplusplus
