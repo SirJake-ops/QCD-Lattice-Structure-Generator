@@ -1,17 +1,52 @@
 cmake_minimum_required(VERSION 3.25)
-project(qcd_prediction LANGUAGES CXX CUDA)
+project(qcd_prediction LANGUAGES CXX)
 
-set(CMAKE_CUDA_STANDARD 20)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+option(QCD_ENABLE_CUDA "Build the CUDA backend scaffolding" OFF)
+if (QCD_ENABLE_CUDA)
+    include(CheckLanguage)
+    check_language(CUDA)
+    if (NOT CMAKE_CUDA_COMPILER)
+        message(FATAL_ERROR "CUDA was requested but no CUDA compiler was found; configure with -DQCD_ENABLE_CUDA=OFF for a CPU-only build")
+    endif ()
+    enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    set(CMAKE_CUDA_EXTENSIONS OFF)
+endif ()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CTest)
 include(FetchContent)
 option(ENABLE_COVERAGE "Build with coverage instrumentation" OFF)
+option(QCD_ENABLE_WARNINGS "Enable strict compiler warnings for project code" ON)
+option(QCD_ENABLE_SANITIZERS "Enable address and undefined-behavior sanitizers" OFF)
+
+add_library(qcd_project_options INTERFACE)
+if (QCD_ENABLE_WARNINGS)
+    target_compile_options(qcd_project_options INTERFACE
+            $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wsign-conversion
+            -Wshadow>)
+endif ()
+
+if (QCD_ENABLE_SANITIZERS)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(qcd_project_options INTERFACE
+                $<$<COMPILE_LANGUAGE:CXX>:-fsanitize=address,undefined;-fno-omit-frame-pointer>)
+        target_link_options(qcd_project_options INTERFACE
+                $<$<LINK_LANGUAGE:CXX>:-fsanitize=address,undefined>)
+    else ()
+        message(FATAL_ERROR "QCD_ENABLE_SANITIZERS currently requires GCC or Clang")
+    endif ()
+endif ()
 
 FetchContent_Declare(
         tomlplusplus
@@ -47,6 +82,8 @@ if (ENABLE_COVERAGE)
 endif ()
 
 add_library(lattice
+        src/core/rng.cpp
+        src/core/statistics.cpp
         src/lattice/lattice.cpp
         include/qcd/lattice.h
         include/qcd/boundary.h
@@ -57,39 +94,47 @@ add_library(lattice
         include/qcd/action.h
         include/qcd/update.h
         include/qcd/observables.h
-        include/qcd/network_config.h
         include/qcd/config.h
         src/config/config.cpp
 )
+add_library(qcd::core ALIAS lattice)
 
 target_include_directories(lattice PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(lattice SYSTEM PUBLIC
+        $<TARGET_PROPERTY:Eigen3::Eigen,INTERFACE_INCLUDE_DIRECTORIES>)
 target_link_libraries(lattice PUBLIC Eigen3::Eigen PRIVATE tomlplusplus::tomlplusplus)
+target_link_libraries(lattice PRIVATE qcd_project_options)
 
 if (ENABLE_COVERAGE)
     target_link_libraries(lattice PUBLIC qcd_coverage_options)
 endif ()
 
-add_library(qcd_cuda
-        src/cuda/gauge_field.cu
-        src/cuda/update.cu
-        src/cuda/kernels.cu
-        include/qcd/cuda/gauge_field.cuh
-        include/qcd/cuda/update.cuh
-        include/qcd/cuda/kernels.cuh
-        include/qcd/cuda/device_rng.cuh)
+if (QCD_ENABLE_CUDA)
+    add_library(qcd_cuda
+            src/cuda/gauge_field.cu
+            src/cuda/update.cu
+            src/cuda/kernels.cu
+            include/qcd/cuda/gauge_field.cuh
+            include/qcd/cuda/update.cuh
+            include/qcd/cuda/kernels.cuh
+            include/qcd/cuda/device_rng.cuh)
 
-target_include_directories(qcd_cuda PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(qcd_cuda PUBLIC lattice)
-
-set_target_properties(qcd_cuda PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON)
+    target_include_directories(qcd_cuda PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(qcd_cuda PUBLIC lattice)
+    set_target_properties(qcd_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+endif ()
 
 add_executable(qcd_prediction
-        apps/main.cu
+        apps/main.cpp
         apps/simulate.cpp
         apps/inspect.cpp)
 
-target_link_libraries(qcd_prediction PRIVATE qcd_cuda)
+target_link_libraries(qcd_prediction PRIVATE qcd_project_options)
+if (QCD_ENABLE_CUDA)
+    target_link_libraries(qcd_prediction PRIVATE qcd_cuda)
+else ()
+    target_link_libraries(qcd_prediction PRIVATE lattice)
+endif ()
 target_compile_definitions(qcd_prediction PRIVATE
         QCD_DEFAULT_CONFIG_PATH="${CMAKE_CURRENT_BINARY_DIR}/configs/default.toml")
 
@@ -105,9 +150,6 @@ foreach (QCD_CONFIG_FILE IN LISTS QCD_CONFIG_FILES)
             COPYONLY)
 endforeach ()
 
-set_target_properties(qcd_prediction PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON)
-
 if (BUILD_TESTING)
     FetchContent_Declare(
             googletest
@@ -118,19 +160,31 @@ if (BUILD_TESTING)
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 
-    add_executable(qcd_sanity_tests
-            tests/sanity_test.cpp
-            tests/config_test.cpp
-            tests/gauge_field_test.cpp)
-    target_link_libraries(qcd_sanity_tests PRIVATE
-            lattice
-            tomlplusplus::tomlplusplus
-            GTest::gtest_main)
-    target_compile_definitions(qcd_sanity_tests PRIVATE
+    include(GoogleTest)
+
+    function(qcd_add_unit_test target source)
+        add_executable(${target} ${source})
+        target_link_libraries(${target} PRIVATE
+                qcd::core
+                qcd_project_options
+                GTest::gtest_main)
+        gtest_discover_tests(${target}
+                DISCOVERY_MODE PRE_TEST
+                DISCOVERY_TIMEOUT 30)
+        set_property(GLOBAL APPEND PROPERTY QCD_TEST_TARGETS ${target})
+    endfunction()
+
+    qcd_add_unit_test(qcd_sanity_tests tests/sanity_test.cpp)
+    qcd_add_unit_test(qcd_config_tests tests/config_test.cpp)
+    qcd_add_unit_test(qcd_lattice_tests tests/lattice_test.cpp)
+    qcd_add_unit_test(qcd_rng_tests tests/rng_test.cpp)
+    qcd_add_unit_test(qcd_statistics_tests tests/statistics_test.cpp)
+    qcd_add_unit_test(qcd_gauge_field_tests tests/gauge_field_test.cpp)
+
+    target_compile_definitions(qcd_config_tests PRIVATE
             QCD_CONFIG_DIR="${CMAKE_CURRENT_SOURCE_DIR}/configs")
 
-    include(GoogleTest)
-    gtest_discover_tests(qcd_sanity_tests)
+    get_property(QCD_TEST_TARGETS GLOBAL PROPERTY QCD_TEST_TARGETS)
 
     if (ENABLE_COVERAGE)
         find_program(GCOVR_EXECUTABLE gcovr)
@@ -155,7 +209,7 @@ if (BUILD_TESTING)
                             --xml-pretty
                             --txt ${COVERAGE_REPORT_DIR}/coverage.txt
                             --print-summary
-                    DEPENDS qcd_sanity_tests
+                    DEPENDS ${QCD_TEST_TARGETS}
                     USES_TERMINAL
                     COMMENT "Running tests and generating coverage reports")
         else ()
@@ -166,7 +220,7 @@ if (BUILD_TESTING)
                     COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR} --output-on-failure
                     COMMAND ${CMAKE_COMMAND} -E echo
                             "gcovr was not found - raw .gcno/.gcda coverage data is available in ${CMAKE_BINARY_DIR}"
-                    DEPENDS qcd_sanity_tests
+                    DEPENDS ${QCD_TEST_TARGETS}
                     USES_TERMINAL
                     COMMENT "Running tests and collecting raw coverage data")
 

@@ -1,9 +1,8 @@
-#include <qcd/lattice.h>
-#include <qcd/gauge_field.h>
 #include <qcd/gauge_field.h>
 
-#include <gtest/gtest.h>
 #include <complex>
+
+#include <gtest/gtest.h>
 
 TEST(GaugeFieldMatrixTest, SupportsComplexMatrixOperations) {
     using gauge_field::Su3Matrix;

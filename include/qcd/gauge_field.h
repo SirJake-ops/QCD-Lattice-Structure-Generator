@@ -1,17 +1,11 @@
 #pragma once
 
-//
-// Created by jacobp on 8/5/26.
-//
-//
-
 #include "lattice.h"
 #include <Eigen/Dense>
 #include <vector>
 
 namespace gauge_field {
 
-// A general complex matrix; SU(3) constraints are enforced by the gauge algorithms.
 using Su3Matrix = Eigen::Matrix3cd;
 
 class GaugeField {

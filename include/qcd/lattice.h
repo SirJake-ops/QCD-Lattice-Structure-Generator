@@ -1,9 +1,6 @@
 #pragma once
 
-//
-// Created by jacobp on 8/5/26.
-//
-
+#include <cstddef>
 #include <span>
 #include <vector>
 
@@ -18,7 +15,9 @@ class Lattice {
 
     [[nodiscard]] index_type dimension_count() const noexcept;
     [[nodiscard]] index_type extent(index_type direction) const;
+    [[nodiscard]] std::span<const index_type> extents() const noexcept;
     [[nodiscard]] index_type volume() const noexcept;
+    [[nodiscard]] index_type link_count() const noexcept;
     [[nodiscard]] index_type site_index(std::span<const index_type> coordinates) const;
 
     [[nodiscard]] coordinate_type coordinate(index_type site) const;
@@ -29,7 +28,7 @@ class Lattice {
 
   private:
     std::vector<index_type> extents_{};
-    std::vector<coordinate_type> strides_{};
+    std::vector<index_type> strides_{};
     index_type volume_{};
 };
 

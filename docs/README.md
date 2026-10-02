@@ -37,8 +37,8 @@ that an arbitrary potential is itself QCD.
 5. Generate a labeled dataset while varying couplings and geometry.
 6. Fit a simple, uncertainty-aware surrogate and compare it with held-out Monte
    Carlo results.
-7. Optimize measured bottlenecks; add a CUDA backend only when CPU results are
-   correct and reproducible.
+7. Optimize measured bottlenecks; fill in the optional CUDA backend only when
+   CPU results are correct and reproducible.
 
 Do not begin with dynamical fermions. Fermion determinants, Dirac-operator
 solves, and algorithms such as Hybrid Monte Carlo multiply the mathematical and

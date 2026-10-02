@@ -42,8 +42,8 @@ initial scope.
 
 Available now:
 
-- CMake targets for a host `lattice` library, a CUDA `qcd_cuda` library, and the
-  `qcd_prediction` executable.
+- CMake targets for a host `lattice` library, an optional CUDA `qcd_cuda`
+  library, and the `qcd_prediction` executable.
 - C++23 host and CUDA C++20 project configuration.
 - TOML configuration loading through
   [toml++](https://github.com/marzer/tomlplusplus).
@@ -51,15 +51,18 @@ Available now:
 - GoogleTest integration through CTest, including configuration parsing and a
   framework sanity test.
 - Optional GCC/gcov coverage instrumentation and gcovr report generation.
-- Empty interfaces and source files defining the intended module layout.
+- Dimension-generic lattice indexing, periodic neighbors, and link indexing.
+- Deterministic random streams with reproducible derived seeds.
+- Numerically stable online mean, variance, and standard-error accumulation.
+- Strict warning and sanitizer options, reusable CMake presets, and CPU CI jobs.
+- Deliberately empty extension-point headers for theory-dependent components.
 
 Not implemented yet:
 
-- lattice indexing and boundary operations;
 - gauge-group and gauge-field representations;
 - actions, update algorithms, and observables;
 - CPU or CUDA simulation kernels;
-- statistical analysis and output serialization;
+- autocorrelation-aware statistical analysis and output serialization;
 - dataset ingestion or generation; and
 - a trained prediction model.
 
@@ -67,7 +70,9 @@ Not implemented yet:
 
 - CMake 3.25 or newer;
 - a C++ compiler with C++23 support;
-- the CUDA toolkit and an `nvcc` toolchain supporting CUDA C++20; and
+- Ninja (for the supplied CMake presets);
+- optionally, the CUDA toolkit and an `nvcc` toolchain supporting CUDA C++20;
+  and
 - Git and network access during the first configuration so CMake can fetch
   Eigen, toml++ and GoogleTest.
 
@@ -97,33 +102,32 @@ Assign expressions to `Su3Matrix` when you want to store an evaluated result.
 
 ## Build and test
 
-Configure and build a Debug version:
+Configure, build, and test the CPU-only Debug version:
 
 ```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
-cmake --build build --parallel
+cmake --preset cpu-debug
+cmake --build --preset cpu-debug
+ctest --preset cpu-debug
 ```
 
-Run the test suite:
-
-```sh
-ctest --test-dir build --output-on-failure
-```
+Equivalent `cpu-release`, `cpu-sanitize`, and `cuda-debug` presets are included.
+CUDA is opt-in for conventional manual configurations through
+`-DQCD_ENABLE_CUDA=ON`.
 
 Run the executable with the copied default configuration:
 
 ```sh
-./build/qcd_prediction
+./build/cpu-debug/qcd_prediction
 ```
 
 Alternatively, pass a configuration explicitly:
 
 ```sh
-./build/qcd_prediction configs/small-test.toml
+./build/cpu-debug/qcd_prediction configs/small-test.toml
 ```
 
-At this stage the executable only verifies configuration loading and prints a
-small amount of resolved information. It does not start a simulation.
+At this stage the executable verifies configuration loading and prints all
+resolved settings. It does not start a simulation.
 
 ## Test coverage
 
@@ -133,6 +137,7 @@ Configure a separate instrumented build and run the coverage target:
 cmake -S . -B build-coverage \
   -DCMAKE_BUILD_TYPE=Debug \
   -DBUILD_TESTING=ON \
+  -DQCD_ENABLE_CUDA=OFF \
   -DENABLE_COVERAGE=ON
 cmake --build build-coverage --target coverage
 ```

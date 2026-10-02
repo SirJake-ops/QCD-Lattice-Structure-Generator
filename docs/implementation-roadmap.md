@@ -55,7 +55,7 @@ qcd-prediction/
       update.cu
       kernels.cu
   apps/
-    main.cu
+    main.cpp
     simulate.cpp       # configuration-driven batch program
     inspect.cpp        # summarize an output file
   tests/
@@ -85,21 +85,25 @@ Completed infrastructure:
 - [x] GoogleTest/CTest integration with sanity and configuration tests.
 - [x] Optional GCC/gcov instrumentation and a repeatable `coverage` target.
 - [x] Optional gcovr HTML, XML, and text report configuration.
+- [x] Periodic lattice geometry with validated indexing and neighbor operations.
+- [x] Deterministic host random streams and stable online moment accumulation.
+- [x] Strict warning and sanitizer build options.
+- [x] CPU Debug, Release, and sanitizer presets plus continuous-integration jobs.
 - [x] Root build/test documentation and project-focused Git ignore rules.
 
 Still required to complete M0:
 
-- [ ] Print all fully resolved settings; the executable currently prints only the
-      selected file and gauge group.
-- [ ] Verify and document a Release workflow from a clean build directory.
+- [x] Print all fully resolved settings.
+- [x] Verify and document a Release workflow from a clean build directory.
 - [ ] Verify the documented Debug and Release workflows from a fresh checkout.
-- [ ] Add project warning and sanitizer options.
-- [ ] Add continuous integration after the local build and test workflow stabilizes.
+- [x] Add project warning and sanitizer options.
+- [x] Add continuous integration for CPU Debug, Release, and sanitizer builds.
 
 Current implementation boundary: configuration parsing and development
-infrastructure are functional. Lattice indexing, group operations, actions,
-updates, observables, statistics, simulation output, and CUDA kernels remain
-empty scaffolding.
+infrastructure are functional. Periodic lattice indexing, deterministic random
+streams, and uncorrelated online moments are implemented. Group operations,
+actions, updates, observables, autocorrelation analysis, simulation output, and
+CUDA kernels remain empty scaffolding.
 
 ## Data model
 
@@ -144,10 +148,10 @@ paper-specific Zenodo deposits.
       clean build directory.
 - [ ] CMake Release configuration is verified and documented.
 - [x] One executable reads and validates a TOML configuration into typed settings.
-- [ ] The executable prints all resolved settings.
+- [x] The executable prints all resolved settings.
 - [x] Tests run with a single CTest or `coverage` target command.
 - [x] Build, test, run, coverage, and current-scope instructions are documented.
-- [ ] Continuous checks use warnings, tests, and sanitizers where supported.
+- [x] Continuous checks use warnings, tests, and sanitizers where supported.
 
 Exit condition: a fresh checkout builds and tests from documented commands.
 
@@ -214,18 +218,18 @@ known symmetries, and its error bars have measured coverage on held-out runs.
 Exit condition: speedup is measured on a realistic run and numerical differences
 remain within documented tolerances.
 
-## First coding task
+## Completed foundation task
 
-Implement a `LatticeShape` type and test it thoroughly before implementing any
-physics:
+The `Lattice` type now provides the initial geometry foundation:
 
 - map coordinates to a flat index and back;
 - return forward and backward periodic neighbors in each dimension;
-- reject zero or overflowing extents;
+- reject zero or overflowing extents; and
 - work on hand-checkable shapes such as `2 x 3` and `2 x 2 x 2 x 4`.
 
-This small component is reused everywhere and catches many errors that would
-otherwise look like physics problems.
+Its tests cover round trips, wrapping, unit extents, invalid locations, and
+overflow. The remaining M1 work is autocorrelation-aware uncertainty estimation
+and any additional random-stream policy needed by the chosen simulation model.
 
 ## Reproducibility rules
 

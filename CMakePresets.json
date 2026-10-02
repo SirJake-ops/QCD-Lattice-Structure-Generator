@@ -1,0 +1,106 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON",
+        "QCD_ENABLE_WARNINGS": "ON"
+      }
+    },
+    {
+      "name": "cpu-debug",
+      "displayName": "CPU Debug",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "QCD_ENABLE_CUDA": "OFF"
+      }
+    },
+    {
+      "name": "cpu-release",
+      "displayName": "CPU Release",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "QCD_ENABLE_CUDA": "OFF"
+      }
+    },
+    {
+      "name": "cpu-sanitize",
+      "displayName": "CPU Debug with sanitizers",
+      "inherits": "cpu-debug",
+      "cacheVariables": {
+        "QCD_ENABLE_SANITIZERS": "ON"
+      }
+    },
+    {
+      "name": "cuda-debug",
+      "displayName": "CUDA Debug",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "QCD_ENABLE_CUDA": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "cpu-debug",
+      "configurePreset": "cpu-debug"
+    },
+    {
+      "name": "cpu-release",
+      "configurePreset": "cpu-release"
+    },
+    {
+      "name": "cpu-sanitize",
+      "configurePreset": "cpu-sanitize"
+    },
+    {
+      "name": "cuda-debug",
+      "configurePreset": "cuda-debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "cpu-debug",
+      "configurePreset": "cpu-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "cpu-release",
+      "configurePreset": "cpu-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "cpu-sanitize",
+      "configurePreset": "cpu-sanitize",
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=0"
+      },
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "cuda-debug",
+      "configurePreset": "cuda-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
