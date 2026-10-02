@@ -19,8 +19,8 @@
   {\begin{quote}\small\noindent\textbf{Interpretation.}\ }
   {\end{quote}}
 
-\title{Pure-Gauge Lattice Calculation\\
-\large Equations, Meaning, and Algorithmic Role}
+\title{Lattice Monte Carlo Foundations\\
+\large The Two-Dimensional Ising Model and Pure-Gauge Calculations}
 \author{QCD Prediction Project}
 \date{}
 
@@ -29,19 +29,25 @@
 \maketitle
 
 \begin{abstract}
-This document explains the mathematical operations in one planned pure-gauge
-lattice calculation. It connects each expression to the data it consumes, the
-quantity it produces, and the next algorithmic step. The intended first
-applications are compact \(\Uone\), pure \(\SUN{2}\), and pure \(\SUN{3}\)
-models with periodic boundaries and the Wilson gauge action. Dynamical
-fermions are outside this calculation.
+This document explains the mathematical operations in two related lattice
+Monte Carlo tracks.  The two-dimensional Ising model supplies a small,
+exactly enumerable test of local Metropolis updates, thermalization, and
+correlated measurements.  The pure-gauge track then applies the same numerical
+ideas to compact \(\Uone\), pure \(\SUN{2}\), and pure \(\SUN{3}\) models with
+periodic boundaries and the Wilson gauge action.  Each expression is connected
+to the data it consumes, the quantity it produces, and its algorithmic role.
+Dynamical fermions are outside this calculation.
 \end{abstract}
 
 \tableofcontents
 
 \section{Calculation at a glance}
 
-One complete run has the following dependency chain:
+Both tracks begin with the same validated lattice geometry, deterministic
+random streams, sampling schedule, and statistical analysis.  The Ising track
+stores spins on sites and is the first end-to-end validation problem.  The
+gauge track stores group elements on links and has the following dependency
+chain:
 
 \begin{enumerate}
   \item Convert lattice extents into site indices and periodic neighbors.
@@ -89,7 +95,11 @@ volume from the potential \(V(r)\). \\
 U_\mu(x) & Gauge link from \(x\) to \(x+\hat\mu\). \\
 G & Gauge group: initially \(\Uone\), then \(\SUN{2}\) or \(\SUN{3}\). \\
 N & Matrix dimension for \(\SUN{N}\); QCD uses \(N=3\). \\
-\beta & Bare inverse coupling in the Wilson action. \\
+s_x & Ising spin at site \(x\), with \(s_x\in\{-1,+1\}\). \\
+J & Ising nearest-neighbor interaction strength. \\
+h & Ising external magnetic field; the first implementation uses \(h=0\). \\
+\beta_{\mathrm{th}} & Thermodynamic inverse temperature \(1/(k_{\mathrm B}T)\). \\
+\beta & Bare gauge coupling parameter appearing inside the Wilson action. \\
 a & Lattice spacing; \(aV\) is a dimensionless potential. \\
 r,t & Spatial and Euclidean-time extents in lattice units. \\
 \Nmeas & Number of saved measurements in a chain. \\
@@ -184,6 +194,222 @@ Wilson paths, and boundary tests.
 \paragraph{Step output.}
 A validated lattice shape, a coordinate/index round trip, and forward/backward
 neighbor operations.
+
+\section{Toy-model track: the two-dimensional Ising model}
+
+The Ising model is not a gauge theory and is not itself QCD.  It is a compact
+test problem for the same Markov-chain, random-number, measurement, and error
+analysis machinery needed later.  The first implementation uses a periodic
+\(L_x\times L_y\) square lattice and one spin
+\begin{equation}
+  s_x\in\{-1,+1\}
+  \label{eq:ising-spin}
+\end{equation}
+at every site.
+
+\subsection{Hamiltonian and bond convention}
+
+Count each positive-axis bond once and define
+\begin{equation}
+  E[s]
+  =-J\sum_{x\in\Lambda}
+      \left[s_xs_{x+\hat 0}+s_xs_{x+\hat 1}\right]
+    -h\sum_{x\in\Lambda}s_x.
+  \label{eq:ising-energy}
+\end{equation}
+For positive \(J\), aligned neighboring spins lower the energy.  Equation
+\eqref{eq:ising-energy} contains \(2\Vlat\) bond terms, and periodic neighbors
+are evaluated with Equation~\eqref{eq:periodic-neighbors}.
+
+On a \(2\times2\) periodic lattice, the forward and backward neighbor in one
+axis have the same coordinate.  They must nevertheless appear twice in the
+local-neighbor multiset because they represent two periodic bond occurrences.
+Removing the duplicate changes the model and invalidates the exact reference
+values below.
+
+The equilibrium probability of a configuration is
+\begin{equation}
+  \pi[s]=\frac{1}{Z}\exp\!\left[-\beta_{\mathrm{th}}E[s]\right],
+  \qquad
+  Z=\sum_{\{s\}}\exp\!\left[-\beta_{\mathrm{th}}E[s]\right].
+  \label{eq:ising-boltzmann}
+\end{equation}
+It is often convenient to use the dimensionless coupling
+\(K=\beta_{\mathrm{th}}J\).  Here \(\beta_{\mathrm{th}}=1/(k_{\mathrm B}T)\)
+is an inverse temperature.  It is conceptually different from the bare gauge
+parameter \(\beta\) in the Wilson action.
+
+\subsection{Local spin-flip energy}
+
+Propose changing only the spin at site \(x\):
+\begin{equation}
+  s_x'=-s_x.
+  \label{eq:ising-flip}
+\end{equation}
+Every term not containing \(s_x\) cancels in
+\(\Delta E=E[s']-E[s]\).  If \(\mathcal N(x)\) is the four-entry multiset
+containing the forward and backward neighbor in both axes, the affected energy
+before the flip is
+\begin{equation}
+  E_{\mathrm{old},x}
+  =-J s_x\sum_{y\in\mathcal N(x)}s_y-hs_x,
+  \label{eq:ising-old-local}
+\end{equation}
+and after the flip it is
+\begin{equation}
+  E_{\mathrm{new},x}
+  =+J s_x\sum_{y\in\mathcal N(x)}s_y+hs_x.
+  \label{eq:ising-new-local}
+\end{equation}
+Subtracting gives the local formula
+\begin{equation}
+  \boxed{\Delta E
+  =2s_x\left(J\sum_{y\in\mathcal N(x)}s_y+h\right)}.
+  \label{eq:ising-delta-energy}
+\end{equation}
+This formula should be tested against a deliberately slow calculation of the
+full energy before and after every possible spin flip on small lattices.
+
+\subsection{Metropolis update and sweep definition}
+
+For a symmetric flip proposal, accept with probability
+\begin{equation}
+  P_{\mathrm{accept}}
+  =\min\left(1,\exp[-\beta_{\mathrm{th}}\Delta E]\right).
+  \label{eq:ising-acceptance}
+\end{equation}
+For \(u\sim\operatorname{Uniform}[0,1)\), the numerically stable decision is
+\begin{equation}
+  \log u<-\beta_{\mathrm{th}}\Delta E.
+  \label{eq:ising-log-acceptance}
+\end{equation}
+When \(\Delta E\leq0\), accept without evaluating the logarithm.  One sweep is
+exactly \(\Vlat\) attempted spin flips.  The program must record whether those
+attempts use a fixed site order, a new random permutation each sweep, or random
+sites sampled with replacement; these policies are not identical finite-chain
+procedures even though each can target the same equilibrium distribution.
+
+A minimal run is
+\begin{verbatim}
+initialize all spins and a deterministic random stream
+
+repeat N_warmup times:
+    attempt one sweep of local spin flips
+
+repeat N_measurements times:
+    repeat N_spacing times:
+        attempt one sweep of local spin flips
+    record energy, magnetization, acceptance count, and sweep number
+\end{verbatim}
+Warm-up length is not proven adequate merely because it was configured.
+Compare ordered and random initial states, inspect histories, and repeat with a
+longer warm-up and measurement spacing.
+
+\subsection{Measurements}
+
+For \(\Vlat=L_xL_y\), define total and per-site energy by
+\begin{equation}
+  E=E[s],
+  \qquad
+  e=\frac{E}{\Vlat},
+  \label{eq:ising-energy-density}
+\end{equation}
+and total and per-site magnetization by
+\begin{equation}
+  M=\sum_{x\in\Lambda}s_x,
+  \qquad
+  m=\frac{M}{\Vlat}.
+  \label{eq:ising-magnetization}
+\end{equation}
+At zero field and finite volume, spin-flip symmetry gives
+\(\langle m\rangle=0\) when both magnetized sectors are sampled.  Therefore
+record \(m\), \(|m|\), and \(m^2\), rather than interpreting a near-zero mean
+magnetization as an absence of ordering.  Also record the acceptance fraction
+\begin{equation}
+  f_{\mathrm{accept}}
+  =\frac{N_{\mathrm{accepted}}}{N_{\mathrm{attempted}}}.
+  \label{eq:ising-acceptance-fraction}
+\end{equation}
+Measurements from consecutive sweeps are correlated and must use the
+autocorrelation or blocking treatment in Step~7.
+
+\subsection{Exact \texorpdfstring{\(2\times2\)}{2x2} enumeration}
+
+For \(h=0\), enumerate all \(2^{\Vlat}=16\) configurations of a
+\(2\times2\) lattice.  With the bond convention in Equation
+\eqref{eq:ising-energy}, the energy levels and degeneracies are
+\begin{center}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+Energy & Degeneracy & Configuration class \\
+\midrule
+\(-8J\) & 2 & all spins aligned \\
+\(0\) & 12 & one-versus-three or adjacent two-versus-two \\
+\(+8J\) & 2 & checkerboard \\
+\bottomrule
+\end{tabular}
+\end{center}
+Consequently,
+\begin{equation}
+  Z_{2\times2}
+  =2\ee^{8K}+12+2\ee^{-8K}
+  =4\left[\cosh(8K)+3\right],
+  \label{eq:ising-2x2-partition}
+\end{equation}
+and the exact per-site energy is
+\begin{equation}
+  \langle e\rangle_{2\times2}
+  =-2J\frac{\sinh(8K)}{\cosh(8K)+3}.
+  \label{eq:ising-2x2-energy}
+\end{equation}
+The exact absolute magnetization per site is
+\begin{equation}
+  \langle |m|\rangle_{2\times2}
+  =\frac{\ee^{8K}+2}{2[\cosh(8K)+3]},
+  \qquad
+  \langle m\rangle_{2\times2}=0.
+  \label{eq:ising-2x2-magnetization}
+\end{equation}
+At \(K=0\), these expressions give \(\langle e\rangle=0\) and
+\(\langle|m|\rangle=3/8\).  As \(K\to\infty\), they approach
+\(\langle e\rangle=-2J\) and \(\langle|m|\rangle=1\).
+
+The enumerator should construct configurations independently of the Monte
+Carlo code, evaluate Equation~\eqref{eq:ising-energy} directly, and accumulate
+weighted observables using Equation~\eqref{eq:ising-boltzmann}.  It is a test
+oracle, not a production sampling algorithm.
+
+\subsection{Ising validation gates}
+
+Before using the toy simulation as evidence that the sampling infrastructure
+works, require all of the following:
+\begin{enumerate}
+  \item every local \(\Delta E\) equals a full-energy recomputation;
+  \item the enumerator reproduces the degeneracies and exact formulas above;
+  \item the same seed and update policy reproduce the same CPU history;
+  \item ordered and random starts agree after adequate warm-up;
+  \item Monte Carlo estimates agree with exact \(2\times2\) values within
+        autocorrelation-aware uncertainty;
+  \item uncertainty grows when fewer effectively independent samples are used;
+        and
+  \item measurements retain chain identity and sweep number.
+\end{enumerate}
+
+\subsection{Relationship to the gauge track}
+
+\begin{center}
+\begin{tabular}{@{}p{0.21\textwidth}p{0.31\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Concept & Ising track & Pure-gauge track \\
+\midrule
+Degrees of freedom & Spins \(s_x\) on sites & Group elements \(U_\mu(x)\) on links \\
+Statistical weight & \(\exp[-\beta_{\mathrm{th}}E]\) & \(\exp[-S_W]\), with \(\beta\) inside \(S_W\) \\
+Local change & \(\Delta E\) from neighboring spins & \(\Delta S\) from neighboring plaquettes \\
+First observables & \(e\), \(m\), \(|m|\) & Plaquette and Wilson loops \\
+Shared machinery & Geometry, RNG, sweeps, histories, autocorrelation, uncertainty & Same \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \section{Step 2: initialize the gauge field}
 
@@ -550,7 +776,7 @@ for every jackknife or bootstrap resample:
 report means, covariance-aware uncertainty, diagnostics, and provenance
 \end{verbatim}
 
-\section{How to interpret the final result}
+\section{How to interpret the final gauge result}
 
 A reported value of \(aV(r)\) is not automatically a continuum QCD prediction.
 It is a result for the documented action, coupling, volume, boundary conditions,

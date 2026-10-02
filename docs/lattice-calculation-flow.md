@@ -5,9 +5,11 @@ lattice calculation. It follows one run from lattice construction through
 Monte Carlo sampling, observable measurement, and static-potential extraction.
 The full simulation pipeline is not yet implemented.
 
-The equations below have renderer-independent text fallbacks. For the full
-typeset reference—with numbered equations, a notation table, an interpretation
-after every expression, and explicit step outputs—open the
+The equations below have renderer-independent text fallbacks. The full typeset
+reference also includes the two-dimensional Ising model, its local Metropolis
+derivation, exact `2 x 2` results, and its relationship to the gauge track. For
+numbered equations, notation tables, interpretations, and explicit step
+outputs, open the
 [rendered PDF](equations/lattice-equations.pdf) or its
 [LaTeX source](equations/lattice-equations.tex).
 
