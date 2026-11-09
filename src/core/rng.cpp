@@ -3,14 +3,12 @@
 #include <stdexcept>
 
 namespace {
-
-std::uint64_t splitmix64(std::uint64_t value) noexcept {
-    value += 0x9e3779b97f4a7c15ULL;
-    value = (value ^ (value >> 30U)) * 0xbf58476d1ce4e5b9ULL;
-    value = (value ^ (value >> 27U)) * 0x94d049bb133111ebULL;
-    return value ^ (value >> 31U);
-}
-
+    std::uint64_t splitmix64(std::uint64_t value) noexcept {
+        value += 0x9e3779b97f4a7c15ULL;
+        value = (value ^ (value >> 30U)) * 0xbf58476d1ce4e5b9ULL;
+        value = (value ^ (value >> 27U)) * 0x94d049bb133111ebULL;
+        return value ^ (value >> 31U);
+    }
 } // namespace
 
 qcd::rng::seed_type qcd::rng::derive_seed(const seed_type base_seed,
@@ -18,10 +16,12 @@ qcd::rng::seed_type qcd::rng::derive_seed(const seed_type base_seed,
     return splitmix64(base_seed ^ splitmix64(stream_id));
 }
 
-qcd::rng::RandomStream::RandomStream(const seed_type seed) : seed_(seed), engine_(seed) {}
+qcd::rng::RandomStream::RandomStream(const seed_type seed) : seed_(seed), engine_(seed) {
+}
 
 qcd::rng::RandomStream::RandomStream(const seed_type base_seed, const seed_type stream_id)
-    : RandomStream(derive_seed(base_seed, stream_id)) {}
+    : RandomStream(derive_seed(base_seed, stream_id)) {
+}
 
 qcd::rng::seed_type qcd::rng::RandomStream::seed() const noexcept { return seed_; }
 

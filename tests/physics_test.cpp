@@ -3,18 +3,20 @@
 #include <qcd/observables.h>
 #include <qcd/update.h>
 
-template <class G> void structural_checks() {
+template<class G>
+void structural_checks() {
     qcd::rng::RandomStream r(42);
     qcd::Field<G> f({4, 4, 4, 4});
     EXPECT_NEAR(qcd::action(f, 1.), 0., 1e-12);
     EXPECT_NEAR(qcd::wilson_loop(f, 2, 2), 1., 1e-12);
     f.hot(r);
-    const std::vector<std::pair<std::size_t, std::size_t>> definitions{
-        {1, 1}, {1, 3}, {2, 2}, {2, 3}};
+    const std::vector<std::pair<std::size_t, std::size_t> > definitions{
+        {1, 1}, {1, 3}, {2, 2}, {2, 3}
+    };
     const auto cached = qcd::wilson_loops(f, definitions);
     for (std::size_t i = 0; i < definitions.size(); ++i)
         EXPECT_NEAR(cached[i], qcd::wilson_loop(f, definitions[i].first, definitions[i].second),
-                    1e-13);
+                1e-13);
     const double old = qcd::action(f, 1.7);
     for (std::size_t mu = 0; mu < 4; ++mu) {
         const auto before = f.at(17, mu);
@@ -44,6 +46,7 @@ template <class G> void structural_checks() {
         EXPECT_NEAR(flux.ws[i], transformed.ws[i], 1e-12);
     }
 }
+
 TEST(Physics, U1GaugeInvarianceAndActionDifference) { structural_checks<qcd::U1>(); }
 TEST(Physics, SU3GaugeInvarianceAndActionDifference) { structural_checks<qcd::SU3>(); }
 
@@ -100,7 +103,7 @@ TEST(Physics, SU3ZeroCouplingHotColdAndReproducibility) {
                 means[chain] += (1. - qcd::action(f, 1.) / 1536.) / 80.;
         }
         EXPECT_NEAR(means[chain], 0., .01);
-        for (const auto &u : f.links)
+        for (const auto &u: f.links)
             EXPECT_TRUE((u.adjoint() * u).isApprox(qcd::SU3::identity(), 1e-11));
     }
     EXPECT_NEAR(means[0], means[1], .015);

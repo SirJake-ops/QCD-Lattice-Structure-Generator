@@ -23,9 +23,9 @@ void qcd::statistics::RunningStatistics::merge(const RunningStatistics &other) n
     const auto combined_count = count_ + other.count_;
     const double delta = other.mean_ - mean_;
     squared_deviation_sum_ += other.squared_deviation_sum_
-                              + delta * delta * static_cast<double>(count_)
-                                    * static_cast<double>(other.count_)
-                                    / static_cast<double>(combined_count);
+            + delta * delta * static_cast<double>(count_)
+            * static_cast<double>(other.count_)
+            / static_cast<double>(combined_count);
     mean_ += delta * static_cast<double>(other.count_) / static_cast<double>(combined_count);
     count_ = combined_count;
 }

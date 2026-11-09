@@ -87,8 +87,9 @@ lattice::Lattice::index_type lattice::Lattice::forward_neighbor(const index_type
     const index_type direction_extent = extent(direction);
     const index_type stride = strides_[direction];
     const index_type component = (site / stride) % direction_extent;
-    return component + 1 == direction_extent ? site - (direction_extent - 1) * stride
-                                             : site + stride;
+    return component + 1 == direction_extent
+               ? site - (direction_extent - 1) * stride
+               : site + stride;
 }
 
 lattice::Lattice::index_type lattice::Lattice::backward_neighbor(const index_type site,
