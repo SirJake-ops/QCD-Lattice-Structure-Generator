@@ -1,244 +1,49 @@
-# Implementation roadmap
+# Implementation and scientific acceptance
 
-## Technology choice
+Successful execution and scientific validation are separate milestones. See the
+[application contract](application-contract.md) for units, artifacts, and interfaces.
 
-C++ is a reasonable core language for this project. Use a small amount of Python
-later for plots and model experiments if desired; keep the simulation output in a
-documented, language-neutral format.
+## Delivered software
 
-Suggested initial toolchain:
+- C++23 serial double CPU U(1) and SU(3), Wilson action, symmetric Metropolis
+  updates, embedded SU(2) rotations, Haar hot starts, identity cold starts.
+- Plaquettes, consecutive rectangular Wilson loops, and joint source-conditioned
+  plaquette measurements in a spatial plane at the source temporal midpoint.
+- Cached straight transporters checked against direct loop products.
+- Group, action-difference, gauge-invariance, analytic U(1), zero-coupling SU(3),
+  vacuum subtraction, symmetry averaging, and reproducibility tests.
+- Autocorrelation, contiguous chain blocking, nested jackknife ratio/GLS plateau
+  fits, covariance, window variation, split R-hat, explicit quality statuses.
+- Versioned JSON/JSONL/HDF5 bundles with source/binary hashes and checksums.
+- SQLite catalogue, cancellable single worker, restart recovery, loopback API.
+- Dataset acceptance gates, whole-point/region splits, training-only Cornell
+  baseline, residual GP, domain rejection, baseline/coverage reports.
+- React/TypeScript, Three.js rotatable geometry, Plotly curves and measured maps,
+  diagnostics, history, artifact downloads, browser workflow tests.
+- Costed pilots, bounded corpus generation, verification, immutable reanalysis.
 
-- C++23 for host code, CUDA C++20, and CMake;
-- toml++ for typed run-configuration parsing;
-- GoogleTest integrated with CTest;
-- GCC/gcov coverage instrumentation, with optional gcovr reports;
-- sanitizers in a debug build;
-- a small matrix/group implementation that can later be replaced or specialized;
-- CSV for early scalar measurements, then HDF5 when configurations and richer
-  metadata justify it.
+## Acceptance gates
 
-Avoid adding a large dependency until a concrete need is demonstrated.
+| Milestone | Evidence and remaining scientific work |
+|---|---|
+| Contract | Implemented and documented. Energy is an output, spacing is a unit convention. |
+| U(1) | Structural and 2D analytic tests pass. Later-time 4D pilot passes internal chain/plateau gates. Larger-volume and start-systematic studies remain. |
+| SU(3) | Structural and zero-coupling tests pass. Short finite-coupling pilot reveals poor equilibration. Matched independent finite-coupling benchmarks and start studies remain required. All SU(3) potentials retain an unvalidated benchmark diagnostic. |
+| Dataset/model | Costed U(1) generation and strict training pipeline exist. Generated manifests report accepted points, frozen splits, baseline errors, and interval coverage. Small evaluation sets stay experimental. |
+| Browser | Real-browser workflow exercises submission, results, rotation, cancellation, and mobile layout. API tests exercise recovery and integrity. |
+| Flux | Joint measurements, translation/reflection/source-exchange averaging, gauge invariance, vacuum subtraction, and propagated uncertainty are implemented. Temporal/volume stability remains required for scientific acceptance. |
+| Performance | CPU is the reference. Straight-path caching follows pilot timing. CUDA remains deferred. |
 
-## Source layout
+## Next scientific work
 
-```text
-qcd-prediction/
-  .gitignore
-  CMakeLists.txt
-  README.md
-  cmake/
-    ResetCoverage.cmake
-  docs/
-  include/qcd/
-    config.h           # typed run-configuration model
-    lattice.h          # dimensions, indexing, neighbors
-    boundary.h
-    rng.h
-    statistics.h       # bins, autocorrelation, error estimates
-    gauge_group.h      # group operations; no update policy
-    gauge_field.h      # backend-neutral field interface
-    action.h
-    update.h
-    observables.h
-    cuda/
-      gauge_field.cuh
-      update.cuh
-      kernels.cuh
-      device_rng.cuh
-  src/
-    config/
-      config.cpp       # TOML parsing and validation
-    lattice/
-      lattice.cpp
-    cuda/
-      gauge_field.cu
-      update.cu
-      kernels.cu
-  apps/
-    main.cpp
-    simulate.cpp       # configuration-driven batch program
-    inspect.cpp        # summarize an output file
-  tests/
-    sanity_test.cpp
-    config_test.cpp
-  configs/
-    default.toml
-    small-test.toml
-    example-su3.toml
-  analysis/
-```
+Compare finite-coupling hot/cold starts and choose later-time windows before a
+larger corpus is frozen. Match SU(3) plaquettes and loops against
+[SIMULATeQCD](https://github.com/LatticeQCD/SIMULATeQCD), recording generator
+revision, action, normalization, geometry, and independent uncertainties. Do not
+use this simulator's own output as an independent benchmark. The current SU(3)
+training gate remains closed until that validation is integrated.
 
-Keep physics definitions separate from storage and execution backends. An
-observable should not need to know whether links live in CPU or GPU memory.
-
-## Current implementation status
-
-Completed infrastructure:
-
-- [x] CMake project with separate host (`lattice`) and CUDA (`qcd_cuda`) libraries.
-- [x] Backend-neutral `.h` interfaces and CUDA-specific `.cuh`/`.cu` scaffolding.
-- [x] Application source layout under `apps/` and a buildable executable skeleton.
-- [x] toml++ integration through CMake `FetchContent`.
-- [x] Typed TOML configuration model with required-field and value validation.
-- [x] Default, small-test, and forward-looking SU(3) configuration examples.
-- [x] Build-directory copies of the example configurations and a default runtime path.
-- [x] GoogleTest/CTest integration with sanity and configuration tests.
-- [x] Optional GCC/gcov instrumentation and a repeatable `coverage` target.
-- [x] Optional gcovr HTML, XML, and text report configuration.
-- [x] Periodic lattice geometry with validated indexing and neighbor operations.
-- [x] Deterministic host random streams and stable online moment accumulation.
-- [x] Strict warning and sanitizer build options.
-- [x] CPU Debug, Release, and sanitizer presets plus continuous-integration jobs.
-- [x] Root build/test documentation and project-focused Git ignore rules.
-
-Still required to complete M0:
-
-- [x] Print all fully resolved settings.
-- [x] Verify and document a Release workflow from a clean build directory.
-- [ ] Verify the documented Debug and Release workflows from a fresh checkout.
-- [x] Add project warning and sanitizer options.
-- [x] Add continuous integration for CPU Debug, Release, and sanitizer builds.
-
-Current implementation boundary: configuration parsing and development
-infrastructure are functional. Periodic lattice indexing, deterministic random
-streams, and uncorrelated online moments are implemented. Group operations,
-actions, updates, observables, autocorrelation analysis, simulation output, and
-CUDA kernels remain empty scaffolding.
-
-## Data model
-
-For each run, record at least:
-
-```text
-schema_version
-model and action convention
-lattice extents and spacing/anisotropy
-boundary conditions
-bare parameters
-update algorithm and proposal parameters
-warm-up sweeps and measurement spacing
-random-number algorithm and seed
-numeric precision
-observable values, chain id, and sweep number
-code revision and build options
-```
-
-Treat units explicitly. Early simulations can use lattice units, but names and
-plot labels should say `a V`, `r/a`, or another dimensionless quantity rather
-than silently presenting physical units.
-
-## Training-data acquisition
-
-The primary training corpus should initially be generated by this project over a
-controlled grid of action, coupling, volume, geometry, and random seeds. Public
-gauge ensembles should be used first for ingestion tests and independent
-validation, not mixed into the training set without matching their action,
-flavour content, boundary conditions, scale setting, and measurement procedure.
-
-Candidate external sources and a staged ingestion plan are documented in
-[Training-data sources](training-data-sources.md). The leading options are ILDG,
-DOE Data Explorer's USQCD/MILC records, JLDG, OpenLat, FASTSUM, and
-paper-specific Zenodo deposits.
-
-## Milestones
-
-### M0: executable skeleton
-
-- [x] CMake configures and builds a Debug build with C++ and CUDA targets from a
-      clean build directory.
-- [ ] CMake Release configuration is verified and documented.
-- [x] One executable reads and validates a TOML configuration into typed settings.
-- [x] The executable prints all resolved settings.
-- [x] Tests run with a single CTest or `coverage` target command.
-- [x] Build, test, run, coverage, and current-scope instructions are documented.
-- [x] Continuous checks use warnings, tests, and sanitizers where supported.
-
-Exit condition: a fresh checkout builds and tests from documented commands.
-
-### M1: lattice and statistics
-
-- Dimension-generic site/link indexing with periodic boundaries.
-- Deterministic seeded random-number streams.
-- Online mean/variance and blocked uncertainty estimates.
-- Tests for every boundary and small lattice.
-
-Exit condition: neighbor tables, index round trips, and a synthetic correlated
-time series pass their tests.
-
-### M2: toy Monte Carlo
-
-- Two-dimensional Ising or scalar-field action.
-- Local Metropolis sweep, warm-up, and measurements.
-- Acceptance rate and time-history output.
-- Comparison with a known small-system result or exact enumeration.
-
-Exit condition: the project can demonstrate equilibration, autocorrelation, and
-a defensible error bar.
-
-### M3: compact U(1)
-
-- Link variables and oriented plaquettes.
-- Wilson action and local action differences.
-- Plaquette and small Wilson-loop measurements.
-- Gauge-transformation invariance tests.
-
-Exit condition: all structural gauge tests pass and results are reproducible.
-
-### M4: pure non-Abelian gauge theory
-
-- SU(2), followed by SU(3), group operations and update proposals.
-- Numerical monitoring of unitarity and determinant.
-- Wilson loops over several `r` and `t` values.
-- Static-potential extraction with blocked uncertainties.
-
-Exit condition: selected parameter points agree with an independent reference or
-published benchmark using matching conventions.
-
-### M5: surrogate predictor
-
-- Generate a primary dataset over a planned grid of coupling, volume, geometry,
-  action, and independently seeded chains.
-- Validate selected points against compatible public ensembles or an established
-  independent lattice code.
-- Split by parameter regions and retain independent test runs.
-- Establish interpolation and simple-regression baselines.
-- Predict both a mean and calibrated uncertainty.
-- Report interpolation separately from extrapolation.
-
-Exit condition: the surrogate improves on simple baselines without violating
-known symmetries, and its error bars have measured coverage on held-out runs.
-
-### M6: performance backend
-
-- Profile representative workloads.
-- Add a CUDA or portable accelerator backend for the dominant kernels.
-- Compare every accelerated observable against the CPU reference.
-- Benchmark end-to-end throughput, including transfers and reductions.
-
-Exit condition: speedup is measured on a realistic run and numerical differences
-remain within documented tolerances.
-
-## Completed foundation task
-
-The `Lattice` type now provides the initial geometry foundation:
-
-- map coordinates to a flat index and back;
-- return forward and backward periodic neighbors in each dimension;
-- reject zero or overflowing extents; and
-- work on hand-checkable shapes such as `2 x 3` and `2 x 2 x 2 x 4`.
-
-Its tests cover round trips, wrapping, unit extents, invalid locations, and
-overflow. The remaining M1 work is autocorrelation-aware uncertainty estimation
-and any additional random-stream policy needed by the chosen simulation model.
-
-## Reproducibility rules
-
-- A run is immutable: write a new output rather than silently appending with
-  different settings.
-- Save the fully resolved configuration beside results.
-- Separate random streams or deterministically derive stream keys for chains and
-  parallel workers.
-- Never rely on parallel execution order for random-number consumption.
-- Use tolerances in floating-point tests; do not require CPU and GPU reductions
-  to be bit-identical.
-- Commit small reference datasets used by tests, but not large generated runs.
+Increase supported volumes and independently chosen holdout regions. Increase
+held-out parameter-point counts before making prediction-accuracy or interval
+calibration claims. Retain every raw history and analysis setting. Optimize
+further only when timing identifies a bottleneck.

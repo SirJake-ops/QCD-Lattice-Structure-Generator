@@ -1,0 +1,236 @@
+{
+  "note": "Seven costed U1 parameter points; quality gates may exclude any point. Six accepted couplings per volume are required for a frozen dataset. This grid has only one volume; larger-volume validation remains future work.",
+  "requests": [
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.3,
+      "separation": 1,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 1,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": false,
+      "field_t": 9,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    },
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.35,
+      "separation": 1,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 10,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": false,
+      "field_t": 9,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    },
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.4,
+      "separation": 1,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 11,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": false,
+      "field_t": 9,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    },
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.45,
+      "separation": 1,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 12,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": false,
+      "field_t": 9,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    },
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.5,
+      "separation": 1,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 13,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": false,
+      "field_t": 9,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    },
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.55,
+      "separation": 1,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 14,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": false,
+      "field_t": 9,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    },
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.6,
+      "separation": 2,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 25,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": true,
+      "field_t": 9,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    }
+  ]
+}

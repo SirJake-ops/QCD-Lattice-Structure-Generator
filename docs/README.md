@@ -1,5 +1,11 @@
 # QCD lattice predictor: starting guide
 
+For the implemented application, start with the [root README](../README.md),
+[application contract](application-contract.md), and
+[acceptance roadmap](implementation-roadmap.md). The conceptual sequence below
+is background; the application implements compact U(1) and pure SU(3), using
+embedded SU(2) proposals rather than a standalone SU(2) theory.
+
 This directory turns the initial idea into a project that can be built and
 tested in stages. The most important first decision is what **predictor** means.
 

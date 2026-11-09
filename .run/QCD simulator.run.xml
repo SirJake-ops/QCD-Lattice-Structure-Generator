@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="QCD simulator" type="CMakeRunConfiguration" factoryName="Application" PROJECT_NAME="qcd_prediction" TARGET_NAME="qcd_simulate" CONFIG_NAME="cpu-debug">
+    <option name="PROGRAM_PARAMS" value="configs/small-test.toml" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>

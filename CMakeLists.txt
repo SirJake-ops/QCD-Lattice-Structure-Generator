@@ -138,6 +138,13 @@ endif ()
 target_compile_definitions(qcd_prediction PRIVATE
         QCD_DEFAULT_CONFIG_PATH="${CMAKE_CURRENT_BINARY_DIR}/configs/default.toml")
 
+execute_process(COMMAND git rev-parse --short=12 HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE QCD_REVISION OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+add_executable(qcd_simulate apps/simulator.cpp)
+target_link_libraries(qcd_simulate PRIVATE qcd::core qcd_project_options)
+target_compile_definitions(qcd_simulate PRIVATE QCD_REVISION="${QCD_REVISION}")
+
 set(QCD_CONFIG_FILES
         default.toml
         small-test.toml
@@ -180,6 +187,7 @@ if (BUILD_TESTING)
     qcd_add_unit_test(qcd_rng_tests tests/rng_test.cpp)
     qcd_add_unit_test(qcd_statistics_tests tests/statistics_test.cpp)
     qcd_add_unit_test(qcd_gauge_field_tests tests/gauge_field_test.cpp)
+    qcd_add_unit_test(qcd_physics_tests tests/physics_test.cpp)
 
     target_compile_definitions(qcd_config_tests PRIVATE
             QCD_CONFIG_DIR="${CMAKE_CURRENT_SOURCE_DIR}/configs")

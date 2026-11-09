@@ -3,7 +3,9 @@
 This page is a visual and mathematical reference for the planned pure-gauge
 lattice calculation. It follows one run from lattice construction through
 Monte Carlo sampling, observable measurement, and static-potential extraction.
-The full simulation pipeline is not yet implemented.
+The serial CPU simulation and correlated analysis pipeline are implemented;
+see [application contracts](application-contract.md) and the
+[acceptance roadmap](implementation-roadmap.md) for validation boundaries.
 
 The equations below have renderer-independent text fallbacks. The full typeset
 reference also includes the two-dimensional Ising model, its local Metropolis

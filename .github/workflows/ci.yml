@@ -30,3 +30,34 @@ jobs:
 
       - name: Test
         run: ctest --preset ${{ matrix.preset }}
+
+  application:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: sudo apt-get update && sudo apt-get install --yes ninja-build
+      - run: cmake -S . -B build/local-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DQCD_ENABLE_CUDA=OFF
+      - run: cmake --build build/local-release --parallel 2
+      - run: python -m pip install -r requirements.lock && python -m pip install -e '.[test]' --no-deps
+      - run: python -m pytest -q
+      - run: npm ci && npm run build && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Browser workflow
+        run: |
+          python -m analysis.cli serve > /tmp/lattice-server.log 2>&1 &
+          LATTICE_SERVER_PID=$!
+          trap 'kill "$LATTICE_SERVER_PID"' EXIT
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:8000/api/v1/health; then break; fi
+            sleep 0.25
+          done
+          cd frontend
+          npx playwright test

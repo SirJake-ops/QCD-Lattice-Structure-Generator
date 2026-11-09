@@ -1,0 +1,104 @@
+{
+  "note": "Fixed follow-up for domain coverage and an independent temporal field-map comparison at beta1.6; every run remains subject to acceptance gates.",
+  "requests": [
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.65,
+      "separation": 2,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 30,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": false,
+      "field_t": 9,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    },
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.6,
+      "separation": 2,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 26,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": true,
+      "field_t": 7,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    },
+    {
+      "gauge_group": "u1",
+      "extents": [
+        8,
+        8,
+        8,
+        24
+      ],
+      "beta": 1.6,
+      "separation": 2,
+      "chains": 4,
+      "warmup_sweeps": 800,
+      "measurements": 256,
+      "sweeps_between_measurements": 4,
+      "seed": 27,
+      "proposal_scale": 0.7,
+      "start": "cold",
+      "max_r": 4,
+      "max_t": 12,
+      "measure_field": true,
+      "field_t": 11,
+      "probe": [
+        0,
+        3
+      ],
+      "analysis": {
+        "fit_min": 8,
+        "fit_max": 10,
+        "block_size": null,
+        "min_blocks": 16,
+        "min_effective_samples": 32
+      }
+    }
+  ]
+}
