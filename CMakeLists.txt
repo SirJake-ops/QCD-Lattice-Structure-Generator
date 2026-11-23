@@ -110,6 +110,7 @@ if (ENABLE_COVERAGE)
 endif ()
 
 if (QCD_ENABLE_CUDA)
+    find_package(CUDAToolkit REQUIRED)
     add_library(qcd_cuda
             src/cuda/gauge_field.cu
             src/cuda/update.cu
@@ -120,7 +121,7 @@ if (QCD_ENABLE_CUDA)
             include/qcd/cuda/device_rng.cuh)
 
     target_include_directories(qcd_cuda PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_link_libraries(qcd_cuda PUBLIC lattice)
+    target_link_libraries(qcd_cuda PUBLIC lattice CUDA::cudart)
     set_target_properties(qcd_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif ()
 
@@ -181,6 +182,23 @@ if (BUILD_TESTING)
         set_property(GLOBAL APPEND PROPERTY QCD_TEST_TARGETS ${target})
     endfunction()
 
+    if (QCD_ENABLE_CUDA)
+        function(qcd_add_unit_test_cuda target source)
+            add_executable(${target} ${source})
+            target_link_libraries(${target} PRIVATE
+                    qcd::core
+                    qcd_cuda
+                    qcd_project_options
+                    GTest::gtest_main)
+            gtest_discover_tests(${target}
+                    DISCOVERY_MODE PRE_TEST
+                    DISCOVERY_TIMEOUT 30)
+            set_property(GLOBAL APPEND PROPERTY QCD_TEST_TARGETS ${target})
+        endfunction()
+
+        qcd_add_unit_test_cuda(qcd_sanity_tests_cuda tests/cuda/runtime_test.cpp)
+    endif ()
+
     qcd_add_unit_test(qcd_sanity_tests tests/sanity_test.cpp)
     qcd_add_unit_test(qcd_config_tests tests/config_test.cpp)
     qcd_add_unit_test(qcd_lattice_tests tests/lattice_test.cpp)
@@ -201,33 +219,33 @@ if (BUILD_TESTING)
         if (GCOVR_EXECUTABLE)
             add_custom_target(coverage
                     COMMAND ${CMAKE_COMMAND}
-                            -DCOVERAGE_BINARY_DIR=${CMAKE_BINARY_DIR}
-                            -P ${CMAKE_SOURCE_DIR}/cmake/ResetCoverage.cmake
+                    -DCOVERAGE_BINARY_DIR=${CMAKE_BINARY_DIR}
+                    -P ${CMAKE_SOURCE_DIR}/cmake/ResetCoverage.cmake
                     COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR} --output-on-failure
                     COMMAND ${CMAKE_COMMAND} -E make_directory ${COVERAGE_REPORT_DIR}
                     COMMAND ${GCOVR_EXECUTABLE}
-                            --root ${CMAKE_SOURCE_DIR}
-                            --object-directory ${CMAKE_BINARY_DIR}
-                            --filter ${CMAKE_SOURCE_DIR}/include/
-                            --filter ${CMAKE_SOURCE_DIR}/src/
-                            --exclude ${CMAKE_SOURCE_DIR}/include/qcd/cuda/
-                            --exclude ${CMAKE_SOURCE_DIR}/src/cuda/
-                            --html-details ${COVERAGE_REPORT_DIR}/index.html
-                            --xml ${COVERAGE_REPORT_DIR}/coverage.xml
-                            --xml-pretty
-                            --txt ${COVERAGE_REPORT_DIR}/coverage.txt
-                            --print-summary
+                    --root ${CMAKE_SOURCE_DIR}
+                    --object-directory ${CMAKE_BINARY_DIR}
+                    --filter ${CMAKE_SOURCE_DIR}/include/
+                    --filter ${CMAKE_SOURCE_DIR}/src/
+                    --exclude ${CMAKE_SOURCE_DIR}/include/qcd/cuda/
+                    --exclude ${CMAKE_SOURCE_DIR}/src/cuda/
+                    --html-details ${COVERAGE_REPORT_DIR}/index.html
+                    --xml ${COVERAGE_REPORT_DIR}/coverage.xml
+                    --xml-pretty
+                    --txt ${COVERAGE_REPORT_DIR}/coverage.txt
+                    --print-summary
                     DEPENDS ${QCD_TEST_TARGETS}
                     USES_TERMINAL
                     COMMENT "Running tests and generating coverage reports")
         else ()
             add_custom_target(coverage
                     COMMAND ${CMAKE_COMMAND}
-                            -DCOVERAGE_BINARY_DIR=${CMAKE_BINARY_DIR}
-                            -P ${CMAKE_SOURCE_DIR}/cmake/ResetCoverage.cmake
+                    -DCOVERAGE_BINARY_DIR=${CMAKE_BINARY_DIR}
+                    -P ${CMAKE_SOURCE_DIR}/cmake/ResetCoverage.cmake
                     COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR} --output-on-failure
                     COMMAND ${CMAKE_COMMAND} -E echo
-                            "gcovr was not found - raw .gcno/.gcda coverage data is available in ${CMAKE_BINARY_DIR}"
+                    "gcovr was not found - raw .gcno/.gcda coverage data is available in ${CMAKE_BINARY_DIR}"
                     DEPENDS ${QCD_TEST_TARGETS}
                     USES_TERMINAL
                     COMMENT "Running tests and collecting raw coverage data")

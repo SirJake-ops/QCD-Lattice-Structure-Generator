@@ -1,5 +1,8 @@
 # QCD lattice predictor: starting guide
 
+Implementation backlog: [GPU computation tickets](tickets/README.md).
+Start with [GPU-01.1 — CUDA smoke test and CPU baseline](tickets/gpu-01.1-build-and-baseline.md).
+
 For the implemented application, start with the [root README](../README.md),
 [application contract](application-contract.md), and
 [acceptance roadmap](implementation-roadmap.md). The conceptual sequence below
@@ -67,6 +70,9 @@ engineering difficulty.
   archives, independent generators, and a staged ingestion strategy.
 - [CUDA decision guide](cuda.md) explains when GPU acceleration is worthwhile
   and how to add it without losing a reliable CPU reference.
+- [GPU computation epic](gpu-computation-epic.md) links to 13 individual
+  [implementation tickets](tickets/README.md) for moving sampling and
+  measurements to CUDA while retaining the existing downstream workflow.
 
 ## A good first scientific question
 

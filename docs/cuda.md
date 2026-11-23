@@ -1,5 +1,10 @@
 # CUDA decision guide
 
+For the planned implementation, follow the
+[GPU computation epic](gpu-computation-epic.md), which turns this guidance into
+sequenced stories with dependencies and acceptance criteria. The backend remains
+unimplemented until those stories are delivered.
+
 ## Short answer
 
 CUDA can be a very good fit for large, regular lattice calculations, but it
