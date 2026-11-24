@@ -18,10 +18,10 @@ prove that the application can allocate memory or execute work on a GPU.
   Allow the developer to specify the target architecture through CMake.
 - [x] Register a `qcd_cuda_tests` target in `CMakeLists.txt`, only when
   `QCD_ENABLE_CUDA` and `BUILD_TESTING` are enabled.
-- [ ] Add `tests/cuda/runtime_test.cpp` and a small device test helper that
+- [x] Add `tests/cuda/runtime_test.cpp` and a small device test helper that
   allocates a buffer, writes known values in a kernel, copies them back, and
   checks the values. Report device, runtime, and driver versions.
-- [ ] Make unavailable hardware an explicit skipped runtime test with its CUDA
+- [x] Make unavailable hardware an explicit skipped runtime test with its CUDA
   error, distinct from a successful GPU execution.
 - [ ] Add reproducible CPU benchmark requests under `configs/benchmarks/` for
   both groups, using small `[4,4,4,8]` and larger `[8,8,8,16]` lattices, with
