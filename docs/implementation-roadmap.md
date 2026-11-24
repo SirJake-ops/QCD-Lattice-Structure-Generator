@@ -32,7 +32,7 @@ Successful execution and scientific validation are separate milestones. See the
 | Dataset/model | Costed U(1) generation and strict training pipeline exist. Generated manifests report accepted points, frozen splits, baseline errors, and interval coverage. Small evaluation sets stay experimental. |
 | Browser | Real-browser workflow exercises submission, results, rotation, cancellation, and mobile layout. API tests exercise recovery and integrity. |
 | Flux | Joint measurements, translation/reflection/source-exchange averaging, gauge invariance, vacuum subtraction, and propagated uncertainty are implemented. Temporal/volume stability remains required for scientific acceptance. |
-| Performance | CPU is the reference. Straight-path caching follows pilot timing. CUDA remains deferred. |
+| Performance | CPU is the reference. Straight-path caching follows pilot timing. CUDA implementation is pending; the [GPU computation epic](gpu-computation-epic.md) defines the migration stories and acceptance gates. |
 
 ## Next scientific work
 

@@ -1,0 +1,33 @@
+{
+  "gauge_group": "u1",
+  "extents": [
+    4,
+    4,
+    4,
+    8
+  ],
+  "beta": 1.0,
+  "separation": 1,
+  "chains": 4,
+  "warmup_sweeps": 100,
+  "measurements": 128,
+  "sweeps_between_measurements": 4,
+  "seed": 1,
+  "proposal_scale": 0.7,
+  "start": "cold",
+  "max_r": 2,
+  "max_t": 4,
+  "measure_field": true,
+  "field_t": 3,
+  "probe": [
+    0,
+    3
+  ],
+  "analysis": {
+    "fit_min": 2,
+    "fit_max": 3,
+    "block_size": null,
+    "min_blocks": 16,
+    "min_effective_samples": 32
+  }
+}
