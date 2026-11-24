@@ -23,20 +23,20 @@ prove that the application can allocate memory or execute work on a GPU.
   checks the values. Report device, runtime, and driver versions.
 - [x] Make unavailable hardware an explicit skipped runtime test with its CUDA
   error, distinct from a successful GPU execution.
-- [ ] Add reproducible CPU benchmark requests under `configs/benchmarks/` for
+- [x] Add reproducible CPU benchmark requests under `configs/benchmarks/` for
   both groups, using small `[4,4,4,8]` and larger `[8,8,8,16]` lattices, with
   field measurements enabled and disabled.
-- [ ] Record release CPU timing and machine details in
+- [x] Record release CPU timing and machine details in
   `docs/benchmarks/gpu-baseline.md`; record a numeric acceleration target for a
   named workload to be evaluated in GPU-01.13.
 
 ## Acceptance checklist
 
-- [ ] With CUDA disabled, configure/build/test succeeds without a toolkit.
-- [ ] With CUDA enabled and hardware available, the smoke test verifies device
+- [x] With CUDA disabled, configure/build/test succeeds without a toolkit.
+- [x] With CUDA enabled and hardware available, the smoke test verifies device
   output; a compile-only run is labeled separately.
-- [ ] Without an accessible GPU, runtime checks report skipped, never passed.
-- [ ] The baseline report contains request paths, commands, revision, hardware,
+- [x] Without an accessible GPU, runtime checks report skipped, never passed.
+- [x] The baseline report contains request paths, commands, revision, hardware,
   repeated timings, and the performance target. Missing hardware is recorded.
 
 ## Verification after implementation
